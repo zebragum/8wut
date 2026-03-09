@@ -54,7 +54,7 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
 
 // GET /posts/:id
 router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
-  const post = await fetchPost(req.params.id, req.userId!);
+  const post = await fetchPost(req.params.id as string, req.userId!);
   if (!post) {
     res.status(404).json({ error: 'Post not found' });
     return;
@@ -102,7 +102,7 @@ router.patch('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { rows: [post] } = await pool.query(
       'UPDATE posts SET caption = $1 WHERE id = $2 AND author_id = $3 RETURNING id',
-      [caption, req.params.id, req.userId]
+      [caption, req.params.id as string, req.userId]
     );
     if (!post) {
       res.status(404).json({ error: 'Post not found or not yours' });
@@ -121,7 +121,7 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { rowCount } = await pool.query(
       'DELETE FROM posts WHERE id = $1 AND author_id = $2',
-      [req.params.id, req.userId]
+      [req.params.id as string, req.userId]
     );
     if (!rowCount) {
       res.status(404).json({ error: 'Post not found or not yours' });
@@ -139,7 +139,7 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
   try {
     const { rows } = await pool.query(
       'SELECT id FROM posts WHERE author_id = $1 ORDER BY created_at DESC',
-      [req.params.userId]
+      [req.params.userId as string]
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));
@@ -155,7 +155,7 @@ router.get('/fridge/:userId', requireAuth, async (req: AuthRequest, res: Respons
     const { rows } = await pool.query(
       `SELECT fs.post_id AS id FROM fridge_saves fs
        WHERE fs.user_id = $1 ORDER BY fs.created_at DESC`,
-      [req.params.userId]
+      [req.params.userId as string]
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));

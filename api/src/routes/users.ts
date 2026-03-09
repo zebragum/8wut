@@ -7,6 +7,7 @@ const router = Router();
 // GET /users/:id
 router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
+    const targetUserId = req.params.id as string;
     const { rows: [user] } = await pool.query(
       `SELECT
          u.id, u.username, u.avatar_url, u.bio, u.is_admin, u.created_at,
@@ -16,7 +17,7 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
          EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = u.id) AS is_following
        FROM users u
        WHERE u.id = $1`,
-      [req.params.id, req.userId]
+      [targetUserId, req.userId]
     );
     if (!user) {
       res.status(404).json({ error: 'User not found' });

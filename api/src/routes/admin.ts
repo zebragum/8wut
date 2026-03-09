@@ -1,5 +1,5 @@
-import { Router, Response } from 'express';
-import { randomBytes } from 'crypto';
+import { Router, Request, Response } from 'express';
+import { randomBytes } from 'node:crypto';
 import pool from '../db';
 import { requireAdmin, AuthRequest } from '../middleware/auth';
 
@@ -56,7 +56,7 @@ router.post('/invites', requireAdmin, async (req: AuthRequest, res: Response) =>
 // DELETE /admin/invites/:code - revoke an invite code
 router.delete('/invites/:code', requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    await pool.query('DELETE FROM invite_codes WHERE code = $1', [req.params.code]);
+    await pool.query('DELETE FROM invite_codes WHERE code = $1', [req.params.code as string]);
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -67,7 +67,7 @@ router.delete('/invites/:code', requireAdmin, async (req: AuthRequest, res: Resp
 // PATCH /admin/users/:id/make-admin - promote user to admin
 router.patch('/users/:id/make-admin', requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
-    await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [req.params.id]);
+    await pool.query('UPDATE users SET is_admin = TRUE WHERE id = $1', [req.params.id as string]);
     res.json({ success: true });
   } catch (err) {
     console.error(err);
