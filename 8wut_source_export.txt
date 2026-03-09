@@ -1,0 +1,2210 @@
+﻿==== src\App.css ====
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+
+==== src\App.tsx ====
+import { useState, useEffect } from 'react';
+import BottomNav from './components/BottomNav';
+import TopBar from './components/TopBar';
+import FeedView from './components/FeedView';
+import ProfileView from './components/ProfileView';
+import CreatePost from './components/CreatePost';
+import NotificationsView from './components/NotificationsView';
+import AuthView from './components/AuthView';
+import { AuthProvider, useAuth } from './AuthContext';
+import './index.css';
+
+function AppShell() {
+  const { currentUser } = useAuth();
+  const [currentView, setCurrentView] = useState('feed');
+  const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
+  const [globalTheme, setGlobalTheme] = useState(localStorage.getItem('8wut-theme') || 'theme-grass');
+
+  useEffect(() => {
+    // Setup Navigation Custom Event Listener
+    const handleNavigate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      
+      if (typeof customEvent.detail === 'string') {
+        setCurrentView(customEvent.detail);
+        if (customEvent.detail === 'profile') setCurrentProfileId(null); // default to current user
+      } else if (typeof customEvent.detail === 'object' && customEvent.detail !== null) {
+        setCurrentView(customEvent.detail.view);
+        if (customEvent.detail.view === 'profile' && customEvent.detail.userId) {
+          setCurrentProfileId(customEvent.detail.userId);
+        }
+      }
+      
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('navigate', handleNavigate);
+
+    // Setup Theme Custom Event Listener
+    const handleThemeChange = (e: Event) => {
+      const themeEvent = e as CustomEvent;
+      setGlobalTheme(themeEvent.detail);
+      localStorage.setItem('8wut-theme', themeEvent.detail);
+    };
+
+    window.addEventListener('change-theme', handleThemeChange);
+
+    return () => {
+      window.removeEventListener('navigate', handleNavigate);
+      window.removeEventListener('change-theme', handleThemeChange);
+    };
+  }, []);
+
+  // Apply the global theme class to document body
+  useEffect(() => {
+    document.body.className = '';
+    document.body.classList.add(globalTheme);
+  }, [globalTheme]);
+
+  if (!currentUser) {
+    return <AuthView />;
+  }
+
+  return (
+    <div className={`app-shell ${globalTheme}`}>
+      <TopBar currentView={currentView} />
+      
+      <main className={`main-content ${currentView === 'create' ? 'create-mode' : ''}`}>
+        {currentView === 'feed' && <FeedView />}
+        {currentView === 'eat' && <FeedView filter="fridge" />}
+        {currentView === 'create' && <CreatePost />}
+        {currentView === 'notifications' && <NotificationsView />}
+        {currentView === 'profile' && <ProfileView userId={currentProfileId} />}
+      </main>
+      
+      <BottomNav currentView={currentView} onViewChange={setCurrentView} />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
+  );
+}
+
+
+==== src\AuthContext.tsx ====
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import type { User } from './data/mockData';
+import { MOCK_USERS } from './data/mockData';
+
+type AuthContextType = {
+  currentUser: User | null;
+  login: (username: string) => boolean;
+  register: (username: string) => boolean;
+  logout: () => void;
+  updatePassword: (newPass: string) => void; 
+  updateUsername: (newName: string) => void;
+};
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Check localStorage on mount for a persisted user name
+    const storedUser = localStorage.getItem('8wut-user');
+    if (storedUser) {
+      // For this demo, we'll try to match it to MOCK_USERS, or fake a user object
+      const found = MOCK_USERS.find(u => u.username.toLowerCase() === storedUser.toLowerCase());
+      if (found) {
+        setCurrentUser(found);
+      } else {
+        // If they registered a new name, fake the rest of the object mock.
+        setCurrentUser({
+          id: 'mock-custom-' + Date.now().toString(),
+          username: storedUser,
+          avatarUrl: 'https://i.pravatar.cc/150?img=47',
+          isFollowing: false,
+          groups: []
+        });
+      }
+    }
+  }, []);
+
+  const login = (username: string) => {
+    if (!username.trim()) return false;
+    
+    // Check local storage mock DB for validation if needed, for KISS we just log them in
+    localStorage.setItem('8wut-user', username.trim());
+    
+    const found = MOCK_USERS.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
+    if (found) {
+      setCurrentUser(found);
+    } else {
+      setCurrentUser({
+        id: 'mock-custom-' + Date.now().toString(),
+        username: username.trim(),
+        avatarUrl: 'https://i.pravatar.cc/150?img=47',
+        isFollowing: false,
+        groups: []
+      });
+    }
+    return true;
+  };
+
+  const register = (username: string) => {
+    if (!username.trim()) return false;
+    // For this mock demo, registering behaves identically to login
+    return login(username);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('8wut-user');
+    setCurrentUser(null);
+  };
+
+  const updatePassword = (newPass: string) => {
+    // Pure UI simulation. We don't store passwords in this mock prototype
+    console.log(`Password logically updated to: ${newPass}`);
+    alert("Password successfully updated. (Simulated)");
+  };
+
+  const updateUsername = (newName: string) => {
+    if (!newName.trim() || !currentUser) return;
+    const cleanName = newName.trim();
+    setCurrentUser({
+      ...currentUser,
+      username: cleanName
+    });
+    // For pure UI simulation, we also mutate the backing store user if it was a mock user.
+    const mockDbUser = MOCK_USERS.find(u => u.id === currentUser.id);
+    if (mockDbUser) {
+      mockDbUser.username = cleanName;
+    }
+    // Update local storage so a page reload remembers the new name
+    localStorage.setItem('8wut-user', cleanName);
+  };
+
+  return (
+    <AuthContext.Provider value={{ currentUser, login, register, logout, updatePassword, updateUsername }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
+
+
+==== src\index.css ====
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Fredoka+One&display=swap');
+
+:root {
+  --color-skyblue: #4fc3f7;
+  --color-lavender: #ce93d8;
+  --color-orange: #ffb74d; /* Lightened from #ff9800 */
+  --color-orange-dark: #f57c00;
+  
+  --color-surface: transparent;
+  --color-surface-container: transparent;
+  --color-surface-elevated: rgba(0, 0, 0, 0.5);
+  --color-text: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  
+  --border-radius-lg: 1.5rem;
+  --border-radius-md: 1rem;
+  --border-radius-sm: 0.5rem;
+  
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: #000;
+  font-family: 'Outfit', system-ui, sans-serif;
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* Global Theme Classes */
+.theme-grass {
+  background-color: #388e3c;
+  background-image: url("/realistic_grass.png");
+  background-size: cover;
+  background-attachment: fixed;
+}
+.theme-black {
+  background-color: #000;
+}
+.theme-stars {
+  background-color: #000;
+  background-image: url("/stars.gif");
+  background-repeat: repeat;
+}
+
+/* Glassmorphism reset for Stars theme only */
+.theme-stars .post-card {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+.theme-party {
+  background: hsl(0, 100%, 50%);
+  animation: rainbow-strobe 0.35s linear infinite;
+}
+/* Force text to be black in Party mode â€” but not inside the settings modal */
+.theme-party, .theme-party *:not(.settings-overlay):not(.settings-overlay *) {
+  color: #000 !important;
+}
+/* Settings modal always keeps its own text colors */
+.settings-overlay, .settings-overlay * {
+  color: unset;
+}
+
+@keyframes rainbow-strobe {
+  0%   { background: hsl(0,   100%, 50%); }   /* red */
+  14%  { background: hsl(30,  100%, 50%); }   /* orange */
+  28%  { background: hsl(60,  100%, 50%); }   /* yellow */
+  42%  { background: hsl(120, 100%, 35%); }   /* green */
+  57%  { background: hsl(180, 100%, 40%); }   /* cyan */
+  71%  { background: hsl(240, 100%, 50%); }   /* blue */
+  85%  { background: hsl(280, 100%, 50%); }   /* violet */
+  100% { background: hsl(360, 100%, 50%); }   /* back to red */
+}
+
+.font-bold {
+  font-weight: 700;
+}
+.text-secondary {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.group-pill {
+  background-color: var(--color-skyblue);
+  color: white;
+  border: 1px solid var(--color-skyblue);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.group-pill:hover {
+  background-color: transparent;
+  color: var(--color-skyblue);
+}
+.group-pill:active {
+  cursor: grabbing;
+}
+
+.app-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 0;
+}
+
+@media (min-width: 600px) {
+  .app-wrapper {
+    padding: 2rem 0;
+  }
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+}
+
+@media (min-width: 600px) {
+  .app-shell {
+    min-height: calc(100vh - 4rem);
+    border-radius: 2rem;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+}
+
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1.25rem;
+  background-color: transparent;
+  position: relative;
+  z-index: 1000;
+  height: 60px;
+  pointer-events: auto;
+}
+.top-bar.profile-mode {
+  justify-content: space-between;
+  border-bottom: none;
+}
+.top-bar.profile-mode .title {
+  font-size: 1.2rem;
+  font-weight: normal;
+  letter-spacing: 0.5px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  color: white; /* Explicitly keep title white */
+}
+.top-bar.profile-mode .menu-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.top-create-btn {
+  font-size: 2.2rem;
+  font-weight: 900;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 8px;
+  animation: rainbow-fade 3s ease-in-out forwards;
+  color: white; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-shadow: none;
+}
+
+@keyframes rainbow-fade {
+  0% { color: var(--color-orange); }
+  25% { color: var(--color-lavender); }
+  50% { color: var(--color-skyblue); }
+  75% { color: var(--color-orange); }
+  100% { color: white; }
+}
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0.5rem 0;
+  padding-bottom: max(env(safe-area-inset-bottom, 12px), 16px);
+  background-color: transparent; /* Changed from skyblue */
+  position: fixed; /* absolute persistence */
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-lavender);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  flex: none; /* Disable stretch flex */
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.nav-item:hover, .nav-item:active, .nav-item.active {
+  transform: scale(1.15); /* Snappy swell effect */
+  background-color: var(--color-orange); /* Haptic color swap */
+  color: unset; /* Override previous white color setting */
+}
+
+.nav-item svg {
+  width: 28px;
+  height: 28px;
+  fill: #388e3c; /* Grass green color to mimic negative space cutout */
+}
+
+h1, h2, h3, h4, h5, p {
+  margin-top: 0;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: 0; /* TopBar is now in normal doc flow */
+  padding-bottom: 110px; /* Space for the persistent bottom nav */
+  background-color: transparent;
+}
+.main-content.create-mode {
+  padding-bottom: 74px;
+  overflow-y: hidden;
+}
+
+
+.dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-skyblue);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.dropdown-item {
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 12px 16px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+.dropdown-item:hover {
+  background-color: rgba(255,255,255,0.2);
+  color: white;
+}
+
+/* Profile View Layout matching exact image */
+.profile-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding-top: 1.25rem; /* Space under the blue bar */
+}
+
+.profile-header-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 8px 20px 8px 20px;
+}
+
+.profile-avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255,255,255,0.7);
+}
+
+.profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.profile-handle {
+  font-size: 1.1rem;
+  color: #fff;
+  font-weight: 400;
+  margin: 0 0 6px 0;
+}
+
+.profile-stats-row {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.profile-stats-row span {
+  margin-right: 0.75rem;
+}
+.profile-stats-row .count {
+  font-weight: 700;
+}
+.profile-stats-row .label {
+  font-weight: 400;
+}
+
+.profile-location {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.edit-profile-btn {
+  background-color: #9b72cf; /* Lavender from image */
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  align-self: flex-start;
+  margin-top: 0.2rem;
+  margin-left: -12px;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+/* Tabs: OVERVIEW | POSTS | BOARDS */
+.profile-tabs {
+  display: flex;
+  justify-content: space-around;
+  border-bottom: 1px solid rgba(255,255,255,0.4);
+  margin-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.tab {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+  font-family: inherit;
+}
+.tab.active {
+  border-bottom: 3px solid #9b72cf; /* match lavender */
+  padding-bottom: 4px;
+ /* ------------------------------------- */
+/*  App Specific Component Styles        */
+/* ------------------------------------- */
+
+/* Top Bar Logo & Bubble */
+.top-logo-container {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  cursor: pointer;
+  padding: 4px;
+}
+.top-logo {
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: transparent; /* No white box */
+}
+
+/* 1-Column Feed List */
+.feed-view-list {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 2rem;
+  width: 100%;
+}
+.feed-list-item {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1; /* Keep images square, filling width */
+  background: rgba(0,0,0,0.2);
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.feed-list-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* 2-Column Feed Grid Framework */
+.feed-view-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+  padding-bottom: 2rem;
+}
+.feed-grid-item {
+  position: relative;
+  aspect-ratio: 1;
+  background: rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+.feed-grid-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feed-image-author-overlay {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+}
+.author-avatar-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.8);
+  object-fit: cover;
+}
+.author-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: white;
+}
+
+/* Special Pink Text Tile */
+.pink-text-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #ef74a8; /* Hot pink from reference */
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  color: white;
+}
+.pink-tile-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.pink-tile-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+.post-time {
+  font-size: 0.75rem;
+  opacity: 0.9;
+}
+.pink-tile-body {
+  font-size: 0.9rem;
+  text-align: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+}
+  margin-bottom: -10px; /* pull down to border */
+}
+
+/* Dynamic Backgrounds for Text Posts */
+.bg-skyblue { background-color: var(--color-skyblue); }
+.bg-lavender { background-color: var(--color-lavender); }
+.bg-orange { border: 1px solid rgba(255,255,255,0.2); background-color: var(--color-orange); }
+.bg-grass { 
+  background-color: #388e3c;
+  background-image: url('/realistic_grass.png');
+  background-size: cover;
+}
+.bg-yellow { background-color: #ffee58; }
+.bg-red { background-color: #ef5350; }
+.bg-transparent { background-color: transparent; }
+
+/* Toggles: grid view | daily journal */
+.profile-toggles {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+  gap: 2px;
+}
+.toggle-btn-sq {
+  background: rgba(255, 114, 0, 0.4); /* translucent orange based on var(--color-orange) */
+  border: 1px solid var(--color-orange);
+  color: white;
+  padding: 0.4rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.toggle-btn-sq:first-child {
+  border-radius: 4px 0 0 4px;
+}
+.toggle-btn-sq:last-child {
+  border-radius: 0 4px 4px 0;
+}
+.toggle-btn-sq.active {
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+}
+
+.profile-grid-clean {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px; /* tiny gap */
+  width: 100%;
+}
+.grid-cell {
+  aspect-ratio: 1;
+  background: rgba(0,0,0,0.2);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.grid-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Base modifications for the other components to work nicely on grass */
+.post-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  margin: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  padding: 12px;
+}
+
+/* PostCard New Layout Styles */
+.post-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+}
+.post-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.avatar-small {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.5);
+}
+.post-header-names {
+  display: flex;
+  flex-direction: column;
+}
+.post-timestamp-header {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.post-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+}
+.action-left-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.action-btn-inline {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: white;
+  gap: 6px;
+}
+.action-btn-inline svg {
+  width: 26px;
+  height: 26px;
+}
+.action-count {
+  font-size: 1rem;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.post-caption-area {
+  padding: 0 12px 14px 12px;
+}
+.caption-inline-header {
+  display: block; /* Flow with inline elements */
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* Profile Topic Pills */
+.topic-pills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 0 4px;
+}
+.topic-pill {
+  border: 1.5px solid var(--color-skyblue);
+  color: white;
+  background: var(--color-skyblue);
+  padding: 6px 14px;
+  border-radius: 6px; /* Boxy like reference, slightly rounded corners */
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.add-topic-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 0 0 0;
+  text-align: right;
+  width: 100%;
+  display: block;
+}
+
+.post-images-container {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1; /* Force square everywhere */
+  border: 3px solid var(--color-skyblue);
+  border-radius: 12px;
+}
+.images-slider {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease-in-out;
+}
+.image-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+}
+.image-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.slider-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+}
+.slider-dots .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+}
+.slider-dots .dot.active {
+  background: white;
+}
+.feed-toggle-container {
+  background: transparent;
+  border-bottom: none;
+}
+.feed-toggle {
+  background: rgba(0,0,0,0.6);
+}
+.create-post-view, .notifications-view {
+  background: transparent;
+}
+/* Delightful Animations */
+@keyframes spinAperture {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(180deg); }
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.top-logo {
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.top-logo:hover, .top-logo:active {
+  transform: scale(1.1);
+}
+
+.top-logo-container {
+  cursor: pointer;
+}
+
+.create-post-view {
+  animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.text-post-input {
+  /* Native overrides */
+  background: transparent !important;
+  color: white !important;
+  border: none !important;
+  outline: none !important;
+  resize: none;
+}
+.text-post-input::placeholder {
+  color: rgba(255,255,255,0.7);
+}
+
+.caption-input textarea {
+  background: rgba(0,0,0,0.6);
+  color: white;
+}
+
+
+==== src\main.tsx ====
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+==== src\components\AuthView.tsx ====
+import { useState } from 'react';
+import { useAuth } from '../AuthContext';
+
+export default function AuthView() {
+  const { login } = useAuth();
+  const [isLoginView, setIsLoginView] = useState(true);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  
+  const handleAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !password.trim()) {
+      alert("Please enter a username and password.");
+      return;
+    }
+    // Simple mock logic: just logs them in or registers them silently in the browser memory
+    login(username);
+  };
+
+  return (
+    <div style={{
+      width: '100vw', 
+      height: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      background: 'rgba(0,0,0,0.6)', 
+      backdropFilter: 'blur(12px)',
+      color: 'white',
+      padding: '24px'
+    }}>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
+         <img src="/8logo.svg" alt="8wut logo" style={{ width: '120px', height: '120px', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }} />
+         <h1 style={{ fontFamily: 'Fredoka One', fontSize: '3rem', margin: '8px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>8wut</h1>
+         <p style={{ opacity: 0.8, marginTop: 0 }}>Community Photojournaling</p>
+      </div>
+
+      <form 
+        onSubmit={handleAuth}
+        style={{
+          width: '100%',
+          maxWidth: '360px',
+          background: 'var(--color-skyblue)',
+          padding: '32px',
+          borderRadius: '24px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px'
+        }}
+      >
+        <h2 style={{ margin: '0 0 8px 0', textAlign: 'center', color: 'white' }}>
+          {isLoginView ? 'Welcome Back' : 'Create Account'}
+        </h2>
+        
+        <input 
+          type="text" 
+          placeholder="Username (e.g. Zach)"
+          value={username}
+          onChange={e => setUsername(e.target.value)}
+          style={{
+            padding: '16px',
+            borderRadius: '12px',
+            border: 'none',
+            fontSize: '1.1rem',
+            fontFamily: 'inherit',
+            background: 'white',
+            outline: 'none',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+          }}
+        />
+        
+        <input 
+          type="password" 
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          style={{
+            padding: '16px',
+            borderRadius: '12px',
+            border: 'none',
+            fontSize: '1.1rem',
+            fontFamily: 'inherit',
+            background: 'white',
+            outline: 'none',
+            boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+          }}
+        />
+
+        <button 
+          type="submit"
+          className="btn-primary" 
+          style={{ 
+            marginTop: '8px',
+            padding: '16px', 
+            borderRadius: '12px', 
+            background: 'var(--color-orange)', 
+            border: 'none', 
+            color: 'white', 
+            fontWeight: 'bold', 
+            fontSize: '1.2rem', 
+            cursor: 'pointer', 
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)' 
+          }}
+        >
+          {isLoginView ? 'Log In' : 'Register'}
+        </button>
+
+        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+          <button 
+             type="button" 
+             style={{ background: 'transparent', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', opacity: 0.8 }}
+             onClick={() => setIsLoginView(!isLoginView)}
+          >
+             {isLoginView ? "Don't have an account? Sign up" : "Already have an account? Log in"}
+          </button>
+        </div>
+      </form>
+      
+      {/* K.I.S.S Note */}
+      <p style={{marginTop: '32px', opacity: 0.6, fontSize: '0.85rem', maxWidth: '300px', textAlign: 'center'}}>
+        * Alpha phase zero-data framework active. Accounts are retained locally on your device.
+      </p>
+
+    </div>
+  );
+}
+
+
+==== src\components\BottomNav.tsx ====
+type BottomNavProps = {
+  currentView: string;
+  onViewChange: (view: string) => void;
+};
+
+export default function BottomNav({ currentView, onViewChange }: BottomNavProps) {
+  return (
+    <nav className="bottom-nav">
+      <button 
+        className={`nav-item ${currentView === 'feed' ? 'active' : ''}`}
+        onClick={() => onViewChange('feed')}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          {/* Home/House Icon */}
+          <path d="M12 2.5C11.5 2.5 11 2.7 10.6 3.1L2.6 10.1C2.2 10.5 2 11 2 11.5L2 20C2 21.1 2.9 22 4 22L9 22L9 15L15 15L15 22L20 22C21.1 22 22 21.1 22 20L22 11.5C22 11 21.8 10.5 21.4 10.1L13.4 3.1C13 2.7 12.5 2.5 12 2.5Z" />
+        </svg>
+      </button>
+
+      <button 
+        className={`nav-item ${currentView === 'create' ? 'active' : ''}`}
+        onClick={() => onViewChange('create')}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          {/* Bold Thick Plus icon */}
+          <path d="M19 10h-5V5h-4v5H5v4h5v5h4v-5h5v-4z" />
+        </svg>
+      </button>
+
+      <button 
+        className={`nav-item ${currentView === 'eat' ? 'active' : ''}`}
+        onClick={() => onViewChange('eat')}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          {/* Refrigerator icon */}
+          <path d="M18 2.5H6C4.9 2.5 4 3.4 4 4.5V10H20V4.5C20 3.4 19.1 2.5 18 2.5ZM4 11.5V19.5C4 20.6 4.9 21.5 6 21.5H18C19.1 21.5 20 20.6 20 19.5V11.5H4ZM9 5.5H10V8.5H9V5.5ZM9 14H10V18H9V14Z" />
+        </svg>
+      </button>
+    </nav>
+  );
+}
+
+
+==== src\components\CreatePost.tsx ====
+import { useState } from 'react';
+import type { MOCK_COLOR_PRESET } from '../data/mockData';
+
+export default function CreatePost() {
+  const [caption, setCaption] = useState('');
+  const [hasImage, setHasImage] = useState(false);
+  const [bgColor, setBgColor] = useState<MOCK_COLOR_PRESET>('skyblue');
+
+  const bgStyles: Record<MOCK_COLOR_PRESET, React.CSSProperties> = {
+    transparent: { backgroundColor: 'rgba(0,0,0,0.4)' },
+    skyblue: { backgroundColor: 'var(--color-skyblue)' },
+    lavender: { backgroundColor: 'var(--color-lavender)' },
+    orange: { border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'var(--color-orange)' },
+    grass: { 
+      backgroundColor: '#388e3c', 
+      backgroundImage: 'url("/realistic_grass.png")',
+      backgroundSize: 'cover'
+    },
+    yellow: { backgroundColor: '#ffee58' },
+    red: { backgroundColor: '#ef5350' }
+  };
+
+  return (
+    <div className="create-post-view" style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: '20px' }}>
+      {/* 
+        If there's an image, the main square shows the image.
+        If there's NO image, the main square is the actual giant colored text box. 
+      */}
+      {!hasImage ? (
+        <div className="text-post-preview" style={{ ...bgStyles[bgColor], transition: 'background 0.3s ease', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', aspectRatio: '1 / 1', overflow: 'hidden', paddingTop: '16px' }}>
+          <textarea
+            className="text-post-input"
+            placeholder="Type your post..."
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            style={{ 
+              width: '100%', 
+              padding: '24px', 
+              fontSize: '1.5rem', 
+              textAlign: 'center', 
+              fontFamily: 'inherit', 
+              resize: 'none', 
+              background: 'transparent', 
+              border: 'none', 
+              color: 'white',
+              /* Vertical centering: let flex parent handle it by not forcing full height */
+              height: 'auto',
+              minHeight: '80px',
+              lineHeight: '1.5'
+            }}
+            rows={3}
+          />
+        </div>
+      ) : (
+        <div className="image-upload-placeholder" style={{ borderRadius: '12px', overflow: 'hidden', position: 'relative' }}>
+          <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=600&auto=format&fit=crop" alt="Uploaded Preview" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+          <button style={{position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', zIndex: 10}} onClick={() => setHasImage(false)}>X</button>
+        </div>
+      )}
+
+      {/* 
+        If there IS an image, we need a small caption box under it.
+        If NO image, we render the color palette options so they can style their floating text.
+      */}
+      {hasImage ? (
+        <div className="caption-input" style={{ marginTop: '12px' }}>
+          <textarea 
+            placeholder="Write a caption..." 
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            rows={3}
+            style={{ borderRadius: '8px', width: '100%', padding: '12px' }}
+          />
+        </div>
+      ) : (
+        <div className="color-palette" style={{ marginTop: '20px', display: 'flex', gap: '12px', flexWrap: 'nowrap', justifyContent: 'center', width: '100%', padding: '8px 0' }}>
+          {(['transparent', 'skyblue', 'orange', 'lavender'] as MOCK_COLOR_PRESET[]).map(color => (
+            <button
+               key={color}
+              className={`color-btn ${bgColor === color ? 'active' : ''}`}
+              style={{ 
+                ...bgStyles[color], 
+                width: bgColor === color ? '48px' : '40px', 
+                height: bgColor === color ? '48px' : '40px', 
+                borderRadius: '50%', 
+                flexShrink: 0, 
+                border: bgColor === color ? 'border: none' : '2px solid white', 
+                boxShadow: bgColor === color ? '0 0 0 3px white inset, 0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.2)',
+                transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                cursor: 'pointer' 
+              }}
+              onClick={() => setBgColor(color)}
+            />
+          ))}
+        </div>
+      )}
+      
+      <div className="create-actions" style={{ flex: 1, marginTop: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', width: '100%' }}>
+        {!hasImage && (
+          <button 
+            className="btn-camera" 
+            style={{ 
+              width: '100px', height: '100px', borderRadius: '50%', 
+              background: 'var(--color-lavender)', border: '2px solid white', 
+              color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+              transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+            }} 
+            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            onClick={() => setHasImage(true)}
+          >
+            {/* SVG Aperture Lens Icon */}
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+              <circle cx="12" cy="13" r="3"></circle>
+            </svg>
+          </button>
+        )}
+        <button className="btn-primary share-btn" style={{ padding: '16px 80px', borderRadius: '32px', background: 'var(--color-orange)', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '1.4rem', cursor: 'pointer', boxShadow: '0 6px 16px rgba(0,0,0,0.2)', textAlign: 'center', width: '100%', maxWidth: '300px' }}>
+          Share
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+==== src\components\FeedView.tsx ====
+import { MOCK_FEED } from '../data/mockData';
+import PostCard from './PostCard';
+
+export default function FeedView({ filter }: { filter?: 'fridge' }) {
+  // If we are looking at the fridge, we only want fridge items.
+  // The user requested the home screen to look just like the daily journal (PostCard format).
+  
+  let basePosts = MOCK_FEED;
+  
+  if (filter === 'fridge') {
+    basePosts = MOCK_FEED.filter(p => p.savedToFridge);
+  }
+
+  // To maintain visual density on feed without writing much more mock data, we loop it.
+  const displayPosts = [...basePosts, ...basePosts, ...basePosts].map((p, i) => ({
+    ...p,
+    id: `${p.id}-loop-${i}`
+  }));
+
+  return (
+    <div className="feed-posts" style={{ padding: '0 8px' }}>
+      {displayPosts.map(post => (
+        <PostCard key={post.id} post={post} />
+      ))}
+      
+      {filter === 'fridge' && displayPosts.length === 0 && (
+         <div style={{ color: 'white', textAlign: 'center', padding: '40px 20px', opacity: 0.7 }}>
+           Your fridge is empty. Save some posts!
+         </div>
+      )}
+    </div>
+  );
+}
+
+
+==== src\components\Logo.tsx ====
+export default function Logo({ className = "", width = 80, height = 80 }: { className?: string; width?: number | string; height?: number | string }) {
+  return (
+    <img 
+      src="/8logo.svg" 
+      alt="8wut Logo" 
+      className={className} 
+      style={{ width: `${width}px`, height: `${height}px`, objectFit: 'contain' }} 
+    />
+  );
+}
+
+
+==== src\components\NotificationsView.tsx ====
+import { MOCK_NOTIFICATIONS } from '../data/mockData';
+
+export default function NotificationsView() {
+  return (
+    <div className="notifications-view" style={{ padding: '0 16px', paddingBottom: '110px' }}>
+      
+      <div className="notifications-list" style={{ paddingTop: '80px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {MOCK_NOTIFICATIONS.map((notif) => (
+          <div key={notif.id} className="notification-item" style={{
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderRadius: '16px',
+            padding: '16px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
+          }}>
+            <img src={notif.user.avatarUrl} alt={notif.user.username} className="avatar" style={{width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', flexShrink: 0}} />
+            
+            <div className="notification-content" style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '4px'}}>
+              <span style={{color: 'white', lineHeight: 1.4, fontSize: '0.95rem', textShadow: '1px 1px 2px rgba(0,0,0,0.3)'}}>
+                <span className="font-bold">{notif.user.username}</span>{' '}
+                {notif.text || (notif.type === 'follow' ? 'started following you.' : 'liked your post.')}
+              </span>
+              <span className="timestamp text-secondary" style={{fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)'}}>{notif.timestamp}</span>
+            </div>
+            
+            {notif.type === 'follow' ? (
+              <button className={`follow-btn ${notif.user.isFollowing ? 'following' : ''}`} style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                border: notif.user.isFollowing ? '1px solid white' : 'none',
+                background: notif.user.isFollowing ? 'transparent' : 'var(--color-orange)',
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: '0.85rem',
+                cursor: 'pointer'
+              }}>
+                {notif.user.isFollowing ? 'Following' : 'Follow'}
+              </button>
+            ) : (
+              <img src={notif.postImage} alt="Post preview" className="post-preview" style={{width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover'}} />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+==== src\components\PostCard.tsx ====
+import { useState } from 'react';
+import type { Post } from '../data/mockData';
+
+type PostCardProps = {
+  post: Post;
+};
+
+export default function PostCard({ post: initialPost }: PostCardProps) {
+  const [post, setPost] = useState(initialPost);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [showHeartAnim, setShowHeartAnim] = useState(false);
+  const [isSaved, setIsSaved] = useState(post.savedToFridge || false);
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editCaption, setEditCaption] = useState(post.caption);
+  const [isDeleted, setIsDeleted] = useState(false);
+
+  const handleSave = () => {
+    initialPost.savedToFridge = !isSaved;
+    setIsSaved(!isSaved);
+  };
+
+  const handleSaveEdit = () => {
+    setPost(prev => ({ ...prev, caption: editCaption }));
+    setIsEditing(false);
+  };
+
+  const handleLike = () => {
+    setPost(prev => ({
+      ...prev,
+      hasLiked: !prev.hasLiked,
+      likes: prev.likes + (prev.hasLiked ? -1 : 1)
+    }));
+    
+    if (!post.hasLiked) {
+      setShowHeartAnim(true);
+      setTimeout(() => setShowHeartAnim(false), 500);
+    }
+  };
+
+  if (isDeleted) return null;
+
+  return (
+    <div className="post-card">
+      <div className="post-images-container">
+        
+        {/* Overlay Author Block directly on the image/block */}
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'rgba(0,0,0,0.4)',
+          padding: '4px 10px 4px 4px',
+          borderRadius: '24px',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <img 
+            src={post.author.avatarUrl} 
+            alt={post.author.username} 
+            className="avatar-small" 
+            style={{ width: '36px', height: '36px', border: '1.5px solid white', cursor: 'pointer' }}
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: post.author.id } }))}
+          />
+          <span 
+            className="username font-bold" 
+            style={{ color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.8)', cursor: 'pointer' }}
+            onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: post.author.id } }))}
+          >
+            {post.author.username}
+          </span>
+        </div>
+
+        {post.images && post.images.length > 0 ? (
+          <>
+            <div 
+              className="images-slider" 
+              style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
+            >
+              {post.images.map((img, idx) => (
+                <div key={idx} className="image-slide" onDoubleClick={handleLike}>
+                  <img src={img} alt={`Post item ${idx}`} loading="lazy" />
+                </div>
+              ))}
+            </div>
+            
+            {post.images.length > 1 && (
+              <div className="slider-dots">
+                {post.images.map((_, idx) => (
+                  <span 
+                    key={idx} 
+                    className={`dot ${idx === activeImageIndex ? 'active' : ''}`}
+                    onClick={() => setActiveImageIndex(idx)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div 
+            className={`bg-${post.textBackground || 'skyblue'}`} 
+            style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+            onDoubleClick={handleLike}
+          >
+            <h2 className="text-post-content font-bold" style={{ textAlign: 'center', margin: 0, textShadow: '1px 1px 3px rgba(0,0,0,0.6)' }}>
+              {post.caption}
+            </h2>
+          </div>
+        )}
+      </div>
+
+      <div className="post-actions-bar">
+        <div className="action-left-group">
+          <button className="action-btn-inline">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+            {post.comments.length > 0 && <span className="action-count">{post.comments.length}</span>}
+          </button>
+          
+          <button className="action-btn-inline" onClick={handleLike}>
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill={post.hasLiked ? "var(--color-orange)" : "none"} 
+              stroke={post.hasLiked ? "var(--color-orange)" : "currentColor"} 
+              strokeWidth="2"
+              className={showHeartAnim ? "heart-animated" : ""}
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            {post.likes > 0 && <span className="action-count">{post.likes > 999 ? '1k+' : post.likes}</span>}
+          </button>
+          
+          <button className={`action-btn-inline ${isSaved ? 'saved' : ''}`} onClick={handleSave}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isSaved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{color: isSaved ? 'var(--color-skyblue)' : 'inherit'}}>
+              {/* Boxy Fridge icon */}
+              <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+              <line x1="4" y1="9" x2="20" y2="9"></line>
+              <line x1="8" y1="4" x2="8" y2="7"></line>
+              <line x1="8" y1="11" x2="8" y2="15"></line>
+            </svg>
+          </button>
+        </div>
+        
+        {/* Render Edit button if Author = Zach (ID: 1) */}
+        {post.author.id === '1' && !isEditing && (
+          <button 
+            className="action-btn-inline" 
+            style={{ marginLeft: 'auto', opacity: 0.7, fontSize: '0.9rem', fontWeight: 600 }}
+            onClick={() => setIsEditing(true)}
+          >
+            Edit
+          </button>
+        )}
+      </div>
+
+      <div className="post-caption-area">
+        {isEditing ? (
+          <div className="caption-edit-mode" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <textarea 
+              value={editCaption}
+              onChange={(e) => setEditCaption(e.target.value)}
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.1)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                borderRadius: '8px',
+                padding: '8px',
+                color: 'white',
+                fontFamily: 'inherit',
+                fontSize: '1rem',
+                minHeight: '60px'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(220,38,38,0.8)', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
+                onClick={() => setIsDeleted(true)}
+              >
+                Delete
+              </button>
+              <button
+                style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(34,197,94,0.85)', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
+                onClick={() => { alert('Reposted! ðŸ”'); setIsEditing(false); }}
+              >
+                Repost
+              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  style={{ padding: '6px 12px', borderRadius: '6px', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', color: 'white', cursor: 'pointer' }}
+                  onClick={() => {
+                    setEditCaption(post.caption);
+                    setIsEditing(false);
+                  }}
+                >
+                   Cancel
+                </button>
+                <button 
+                  style={{ padding: '6px 12px', borderRadius: '6px', background: 'var(--color-skyblue)', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
+                  onClick={handleSaveEdit}
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="caption-inline-header">
+             <div>
+               <span className="username font-bold" onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: post.author.id } }))} style={{ cursor: 'pointer' }}>
+                 {post.author.username}
+               </span> 
+               <span className="caption-text" style={{ marginLeft: '6px' }}>{post.caption}</span>
+             </div>
+          </div>
+        )}
+
+        {post.comments.length > 0 && (
+          <div className="comments-inline-preview text-secondary" style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+             <div><span className="font-bold" style={{ color: 'white', marginRight: '4px' }}>{post.comments[0].username}</span> {post.comments[0].text}</div>
+             {post.comments.length > 1 && (
+               <div style={{ opacity: 0.8 }}>Also salads are great</div>
+             )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+==== src\components\ProfileView.tsx ====
+import { useState, useEffect } from 'react';
+import { MOCK_USERS, MOCK_FEED } from '../data/mockData';
+import PostCard from './PostCard';
+import { useAuth } from '../AuthContext';
+
+export default function ProfileView({ userId }: { userId?: string | null }) {
+  const { currentUser } = useAuth();
+  
+  const user = userId 
+    ? MOCK_USERS.find(u => u.id === userId) || currentUser || MOCK_USERS[0]
+    : currentUser || MOCK_USERS[0];
+    
+  const isOwnProfile = currentUser?.id === user.id;
+
+  const [viewMode, setViewMode] = useState<'grid' | 'journal'>('grid');
+  const [activeTab, setActiveTab] = useState<'overview' | 'posts' | 'fridge'>('posts');
+  const [userGroups, setUserGroups] = useState<string[]>(user.groups || []);
+  
+  useEffect(() => {
+    setUserGroups(user.groups || []);
+  }, [user.id, user.groups]);
+  
+  // Real Post Count
+  const userPosts = MOCK_FEED.filter(p => p.author.id === user.id);
+  const realPostCount = userPosts.length;
+
+  // Just gathering all images from mock feed to simulate a grid
+  const userPostsImages = MOCK_FEED.flatMap(post => post.images || []);
+  // Add some duplicates so the grid looks full like the image
+  const displayImages = [...userPostsImages, ...userPostsImages, ...userPostsImages].slice(0, 9);
+
+  const handleDragStart = (e: React.DragEvent<HTMLButtonElement>, index: number) => {
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Necessary to allow dropping
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLButtonElement>, toIndex: number) => {
+    e.preventDefault();
+    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    if (fromIndex === toIndex) return;
+
+    const newGroups = [...userGroups];
+    const [movedItem] = newGroups.splice(fromIndex, 1);
+    newGroups.splice(toIndex, 0, movedItem);
+    
+    // Explicitly mutate the MOCK_USERS underlying object so it persists between renders/tabs
+    if (user) {
+      user.groups = newGroups;
+    }
+    
+    setUserGroups(newGroups);
+  };
+
+  return (
+    <div className="profile-view">
+      
+      <div className="profile-header-card">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <img src={user.avatarUrl} alt={user.username} className="profile-avatar" />
+          {isOwnProfile && (
+            <button className="edit-profile-btn" style={{ margin: '0 auto', marginTop: '-16px', position: 'relative', zIndex: 10 }}>
+              edit profile
+            </button>
+          )}
+        </div>
+        
+        <div className="profile-info" style={{ justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+          <h2 className="profile-name" style={{ marginBottom: '8px', fontSize: '2rem' }}>{user.username}</h2>
+          <div 
+            className="profile-stats-row" 
+            style={{ cursor: 'pointer', marginBottom: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px 12px', fontSize: '1.4rem', fontWeight: '700' }}
+            onClick={() => alert("Followers list: User has 3.1k followers.")}
+          >
+            <div><span className="count">512</span><span className="label"> following</span></div>
+            <div><span className="count">3.1k</span><span className="label"> followers</span></div>
+          </div>
+          {activeTab === 'posts' && userGroups.length >= 2 && (
+             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', paddingBottom: '16px' }}>
+                <button className="group-pill">{userGroups[0]}</button>
+                <button className="group-pill">{userGroups[1]}</button>
+             </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="profile-tabs">
+        <button className={`tab ${activeTab === 'posts' ? 'active' : ''}`} onClick={() => setActiveTab('posts')}>POSTS ({realPostCount})</button>
+        <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>OVERVIEW</button>
+        <button className={`tab ${activeTab === 'fridge' ? 'active' : ''}`} onClick={() => setActiveTab('fridge')}>FRIDGE</button>
+      </div>
+
+      {activeTab === 'overview' && (
+        <div className="overview-content" style={{ padding: '0 1rem 1rem 1rem', color: 'white' }}>
+          <div style={{ background: 'var(--color-orange)', padding: '12px', borderRadius: '8px', marginBottom: '16px', marginTop: '16px', textShadow: '0 1px 2px rgba(0,0,0,0.3)', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+            <p style={{lineHeight: 1.5, fontSize: '1.2rem', margin: 0}}>Passionate about achieving optimal health and performance through nutrition and training.<br/>Personal trainer, coach, athlete, blogg</p>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center', marginBottom: '16px' }}>
+            {userGroups.map((group, idx) => (
+              <button
+                key={group}
+                className="group-pill"
+                draggable
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, idx)}
+                style={{ fontSize: '1.1rem', cursor: 'grab' }}
+                title="Drag to reorder"
+              >
+                â ¿ {group}
+              </button>
+            ))}
+          </div>
+          {isOwnProfile && (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="add/edit groups"
+                style={{ padding: '8px 16px', borderRadius: '20px', border: '2px solid rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.15)', color: 'white', fontFamily: 'inherit', fontSize: '1rem', outline: 'none', width: '180px' }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    const val = e.currentTarget.value.trim();
+                    const next = [...userGroups, val];
+                    user.groups = next;
+                    setUserGroups(next);
+                    e.currentTarget.value = '';
+                  }
+                }}
+              />
+            </div>
+          )}
+        </div>
+      )}
+      
+
+      {activeTab === 'posts' && (
+        <>
+          <div className="profile-toggles">
+            <button className={`toggle-btn-sq ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}>grid view</button>
+            <button className={`toggle-btn-sq ${viewMode === 'journal' ? 'active' : ''}`} onClick={() => setViewMode('journal')}>daily journal</button>
+          </div>
+
+          {viewMode === 'grid' ? (
+            <div className="profile-grid-clean">
+              {displayImages.map((img, idx) => (
+                <div 
+                  key={idx} 
+                  className="grid-cell" 
+                  onClick={() => setViewMode('journal')}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <img src={img} alt={`User post ${idx}`} loading="lazy" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="feed-posts" style={{padding: '0 8px'}}>
+              {MOCK_FEED.map(post => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'fridge' && (
+        <div className="feed-posts" style={{padding: '0 8px'}}>
+          {MOCK_FEED.filter(p => p.savedToFridge).map(post => (
+            <PostCard key={post.id} post={post} />
+          ))}
+          {MOCK_FEED.filter(p => p.savedToFridge).length === 0 && (
+             <div style={{ color: 'white', textAlign: 'center', padding: '40px 20px', opacity: 0.7 }}>Your fridge is empty. Save some posts!</div>
+          )}
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+
+==== src\components\TopBar.tsx ====
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../AuthContext';
+import Logo from './Logo';
+
+interface TopBarProps {
+  currentView: string;
+}
+
+export default function TopBar({ currentView }: TopBarProps) {
+  const { currentUser, logout, updatePassword, updateUsername } = useAuth();
+  const [showMenu, setShowMenu] = useState(false);
+  const [isFood, setIsFood] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Password change state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Username change state
+  const [newUsername, setNewUsername] = useState('');
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword) return;
+    if (newPassword !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+    updatePassword(newPassword);
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleChangeUsername = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUsername.trim()) return;
+    updateUsername(newUsername);
+    setNewUsername('');
+    alert("Username successfully updated!");
+  };
+
+  useEffect(() => {
+    // Click outside listener for the dropdown menu
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMenu]);
+
+  useEffect(() => {
+    // Blinks 'Food' 1 out of 4 seconds
+    const interval = setInterval(() => {
+      setIsFood(true);
+      setTimeout(() => setIsFood(false), 1000);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Determine if we should show the title
+  // Based on user request, the Home (feed) button should show the same thing on top as the profile view.
+  const showTitle = currentView === 'profile' || currentView === 'feed' || currentView === 'eat' || currentView === 'notifications' || currentView === 'create';
+
+  let currentTitle = 'Zach';
+  if (currentView === 'feed') {
+    currentTitle = isFood ? 'Food' : 'Feed';
+  } else if (currentView === 'eat') {
+    currentTitle = 'Fridge';
+  } else if (currentView === 'profile') {
+    currentTitle = 'Profile';
+  } else if (currentView === 'notifications') {
+    currentTitle = 'Notifications';
+  } else if (currentView === 'create') {
+    currentTitle = 'New Post';
+  }
+
+  return (
+    <header className="top-bar">
+      {/* 8logo.svg replacement is already applied natively inside the component */}
+      <div 
+        className="top-logo-container" 
+        onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications'}))}
+        style={{ padding: '24px 0 0 0', marginLeft: '-4px' }}
+      >
+        <Logo width="63" height="63" className="top-logo" />
+      </div>
+      
+      {showTitle && <h2 style={{margin: 0, marginTop: '4px', fontFamily: '"Outfit", sans-serif', fontSize: '1.5rem', fontWeight: 'bold', color: 'white', textShadow: '1px 1px 2px rgba(0,0,0,0.5)', position: 'absolute', top: '16px', left: '50%', transform: 'translateX(-50%)'}}>{currentTitle}</h2>}
+      
+      <div className="top-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }} ref={menuRef}>
+        <button className="top-create-btn" onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'create'}))}>
+          +
+        </button>
+        <button
+          className="top-create-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'profile'}))}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingBottom: '2px' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+          </svg>
+        </button>
+        <button 
+          className="top-create-btn" 
+          style={{ paddingBottom: '8px' }}
+          onClick={() => setShowMenu(!showMenu)}
+        >
+          â‹®
+        </button>
+
+        {showMenu && (
+          <div className="dropdown-menu" style={{
+            position: 'absolute',
+            top: '100%',
+            right: '0',
+            backgroundColor: 'var(--color-skyblue)',
+            borderRadius: '8px',
+            padding: '0',
+            minWidth: '180px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            zIndex: 100,
+            overflow: 'hidden'
+          }}>
+            <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications'})); }}>Notifications</button>
+            <button className="dropdown-item" onClick={() => { setShowMenu(false); setShowSettings(true); }}>Settings</button>
+            <button className="dropdown-item" onClick={() => { 
+                setShowMenu(false); 
+                window.open(`mailto:zthammond@gmail.com?subject=8wut SUPPORT (${Math.floor(Math.random() * 100000)})`); 
+            }}>Help/Support</button>
+            <button className="dropdown-item" style={{ borderTop: '1px solid rgba(255,255,255,0.2)' }} onClick={() => { setShowMenu(false); logout(); }}>Log Out</button>
+          </div>
+        )}
+      </div>
+
+      {/* Lightweight Modals */}
+      {showSettings && (
+        <div style={{position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'}} onClick={() => setShowSettings(false)}>
+          <div className="settings-overlay" style={{background: 'var(--color-skyblue)', padding: '24px', borderRadius: '16px', maxWidth: '400px', width: '100%', maxHeight: '80vh', overflowY: 'auto', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative'}} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setShowSettings(false)}
+              style={{ position: 'absolute', top: '16px', left: '16px', background: 'transparent', border: 'none', color: 'white', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer', lineHeight: 1 }}
+            >
+              &times;
+            </button>
+            <h2 style={{marginTop: 0, color: 'white', textShadow: '1px 1px 2px rgba(0,0,0,0.3)', marginBottom: '0'}}>Settings</h2>
+            
+            {/* Privacy */}
+             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px' }}>
+               <h3 style={{margin: '0 0 8px 0', color: 'white', fontSize: '1.1rem'}}>Privacy & Safety</h3>
+               <p style={{color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', lineHeight: 1.4, margin: 0}}>We do not monetize your data. We only require a login so you can participate securely in this community photojournaling app. That's it.</p>
+             </div>
+
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+               <h4 style={{margin: '0', color: 'white', textAlign: 'center', gridColumn: '1 / -1'}}>Background Theme</h4>
+               <button className="btn-primary" style={{padding: '14px 8px', borderRadius: '8px', border: '1px solid white', background: '#388e3c', color: 'var(--color-lavender)', fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer'}} onClick={() => { window.dispatchEvent(new CustomEvent('change-theme', { detail: 'theme-grass' })); }}>Grass</button>
+               <button className="btn-primary" style={{padding: '14px 8px', borderRadius: '8px', border: '1px solid white', background: '#000', color: 'var(--color-lavender)', fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer'}} onClick={() => { window.dispatchEvent(new CustomEvent('change-theme', { detail: 'theme-black' })); }}>Black</button>
+               <button className="btn-primary" style={{padding: '14px 8px', borderRadius: '8px', border: '1px solid white', background: '#000033', color: 'var(--color-lavender)', fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer'}} onClick={() => { window.dispatchEvent(new CustomEvent('change-theme', { detail: 'theme-stars' })); }}>Stars</button>
+               <button className="btn-primary" style={{padding: '14px 8px', borderRadius: '8px', border: '1px solid white', background: 'linear-gradient(90deg, red, orange, yellow, green, blue, purple)', color: 'var(--color-lavender)', fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer', textShadow: '0 1px 2px rgba(0,0,0,0.5)'}} onClick={() => { window.dispatchEvent(new CustomEvent('change-theme', { detail: 'theme-party' })); }}>Rave</button>
+             </div>
+             
+             {/* Username */}
+             <form onSubmit={handleChangeUsername} style={{width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '20px', marginTop: '4px'}}>
+               <h4 style={{margin: '0', color: 'white', textAlign: 'center'}}>Change Username</h4>
+               <div style={{ display: 'flex', gap: '8px' }}>
+                 <input 
+                    type="text" 
+                    placeholder={currentUser?.username || "New Username"} 
+                    value={newUsername}
+                    onChange={e => setNewUsername(e.target.value)}
+                    style={{padding: '12px', borderRadius: '8px', border: 'none', width: '100%', fontFamily: 'inherit', fontSize: '1rem', flex: 1}} 
+                 />
+                 <button type="submit" className="btn-primary" style={{padding: '12px 24px', borderRadius: '8px', background: 'var(--color-orange)', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer'}}>Save</button>
+               </div>
+             </form>
+
+             {/* Password */}
+             <form onSubmit={handleChangePassword} style={{width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid rgba(255,255,255,0.2)', paddingTop: '20px', marginTop: '4px'}}>
+               <h4 style={{margin: '0', color: 'white', textAlign: 'center'}}>Change Password</h4>
+               <input 
+                  type="text" 
+                  placeholder="New Password" 
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  style={{padding: '12px', borderRadius: '8px', border: 'none', width: '100%', fontFamily: 'inherit', fontSize: '1rem'}} 
+               />
+               <input 
+                  type="text" 
+                  placeholder="Confirm Password" 
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  style={{padding: '12px', borderRadius: '8px', border: 'none', width: '100%', fontFamily: 'inherit', fontSize: '1rem'}} 
+               />
+               <button type="submit" className="btn-primary" style={{marginTop: '4px', padding: '12px', borderRadius: '8px', background: 'var(--color-orange)', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer'}}>Update Password</button>
+             </form>
+            
+            <button className="btn-primary" style={{marginTop: '8px', padding: '12px', borderRadius: '8px', border: 'none', background: 'white', color: 'var(--color-skyblue)', fontWeight: 'bold', cursor: 'pointer'}} onClick={() => setShowSettings(false)}>Close Window</button>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
+
+
+==== src\data\mockData.ts ====
+export type User = {
+  id: string;
+  username: string;
+  avatarUrl: string;
+  isFollowing: boolean;
+  groups?: string[];
+};
+
+export type Comment = {
+  id: string;
+  username: string;
+  text: string;
+  timestamp: string;
+};
+
+export type MOCK_COLOR_PRESET = 'transparent' | 'skyblue' | 'lavender' | 'orange' | 'grass' | 'yellow' | 'red';
+
+export type Post = {
+  id: string;
+  author: User;
+  images?: string[];         // Optional if text-only
+  textBackground?: MOCK_COLOR_PRESET; // Used if 'images' is empty
+  caption: string;           
+  likes: number;
+  hasLiked: boolean;
+  savedToFridge?: boolean;
+  comments: Comment[];
+  timestamp: string;
+};
+
+export const MOCK_USERS: User[] = [
+  { id: '1', username: 'Zach', avatarUrl: '/avatar_zach.jpg', isFollowing: true, groups: ['cooking aficionados', 'organic foods', 'personal trainers', 'gluten free (mostly)', 'bikers/cyclists', 'food journalers', 'primal', 'bodybuilders & fitness competitors'] },
+  { id: '2', username: 'chef.steve', avatarUrl: 'https://i.pravatar.cc/150?img=11', isFollowing: false },
+  { id: '3', username: 'late_night_bites', avatarUrl: 'https://i.pravatar.cc/150?img=32', isFollowing: true },
+];
+
+export const MOCK_FEED: Post[] = [
+  {
+    id: 'p1',
+    author: MOCK_USERS[0],
+    images: [
+      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80',
+      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80'
+    ],
+    caption: 'Best avocado toast in the city! ðŸ¥‘âœ¨ The sourdough was perfectly crispy.',
+    likes: 124,
+    hasLiked: false,
+    comments: [
+      { id: 'c1', username: 'chef.steve', text: 'Looks amazing!', timestamp: '2h' },
+      { id: 'c1b', username: 'foodie_gal', text: 'Where did you get this?', timestamp: '1h' }
+    ],
+    timestamp: '3h ago'
+  },
+  {
+    id: 'p2',
+    author: MOCK_USERS[1],
+    images: [
+      'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&q=80',
+      'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=800&q=80',
+      'https://images.unsplash.com/photo-1460306855393-0410f61241c7?w=800&q=80'
+    ],
+    caption: 'My latest test kitchen creation. What do we think? ðŸ”ðŸ”¥',
+    likes: 3892,
+    hasLiked: true,
+    comments: [
+      { id: 'c2', username: 'foodie_gal', text: 'I need the recipe NOW!', timestamp: '1h' },
+      { id: 'c3', username: 'late_night_bites', text: 'That glaze though...', timestamp: '30m' }
+    ],
+    timestamp: '5h ago'
+  },
+  {
+    id: 'p3',
+    author: MOCK_USERS[2],
+    textBackground: 'orange',
+    caption: 'Anyone else craving spicy ramen at 2am, or is it just me? ðŸœðŸ”¥',
+    likes: 852,
+    hasLiked: false,
+    comments: [],
+    timestamp: '1h ago'
+  },
+  {
+    id: 'p4',
+    author: MOCK_USERS[0],
+    images: [
+      'https://images.unsplash.com/photo-1528825871115-3581a5387919?w=800&q=80',
+      'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?w=800&q=80',
+      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80',
+      'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?w=800&q=80',
+      'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=800&q=80'
+    ],
+    caption: 'Tasting menu was out of this world! ðŸ·âœ¨',
+    likes: 541,
+    hasLiked: true,
+    comments: [],
+    timestamp: 'Yesterday'
+  }
+];
+
+export const MOCK_NOTIFICATIONS = [
+  { 
+    id: 'n1', 
+    type: 'fridge', 
+    user: { id: '4', username: 'Heather', avatarUrl: 'https://i.pravatar.cc/150?img=5', isFollowing: false }, 
+    postImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&q=80', 
+    text: 'added your post to her Fridge',
+    timestamp: '10m ago' 
+  },
+  { 
+    id: 'n2', 
+    type: 'follow', 
+    user: { id: '5', username: 'Pearl', avatarUrl: 'https://i.pravatar.cc/150?img=9', isFollowing: false }, 
+    text: 'followed you',
+    timestamp: '1h ago' 
+  }
+];
+
+
