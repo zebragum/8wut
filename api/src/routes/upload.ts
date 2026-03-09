@@ -18,7 +18,7 @@ const upload = multer({
   limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
   fileFilter: (_req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
-    else cb(new Error('Only images allowed'));
+    else cb(new Error('Only images allowed') as any);
   }
 });
 
@@ -42,7 +42,7 @@ router.post('/', requireAuth, upload.single('image'), async (req: AuthRequest, r
           else resolve(result as { secure_url: string });
         }
       );
-      stream.end(req.file!.buffer);
+      (stream as any).end(req.file!.buffer);
     });
     res.json({ url: result.secure_url });
   } catch (err) {

@@ -10,7 +10,8 @@ import { join } from 'path';
 import pool from '../db';
 
 async function main() {
-  const sql = readFileSync(join(__dirname, '..', 'schema.sql'), 'utf8');
+  // schema.sql is in the root of 'api/' (two levels up from dist/scripts/)
+  const sql = readFileSync(join(__dirname, '..', '..', 'schema.sql'), 'utf8');
   console.log('Running schema.sql...');
   await pool.query(sql);
   console.log('✅ Database schema created successfully!');
