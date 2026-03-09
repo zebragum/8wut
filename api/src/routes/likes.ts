@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import pool from '../db';
 import { requireAuth, AuthRequest } from '../middleware/auth';
 
