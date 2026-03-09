@@ -786,3 +786,62 @@ h1, h2, h3, h4, h5, p {
   background: rgba(0,0,0,0.6);
   color: white;
 }
+
+/* Desktop QR Code Overlay */
+.desktop-only-overlay {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktop-only-overlay {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    z-index: 99999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    padding: 24px;
+    font-family: 'Fredoka One', cursive;
+  }
+  
+  .qr-code-container {
+    background: white;
+    padding: 16px;
+    border-radius: 20px;
+    margin: 24px 0;
+    box-shadow: 0 0 30px rgba(79, 195, 247, 0.5);
+  }
+  
+  .qr-code-placeholder {
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    color: #333;
+    font-family: 'Outfit', sans-serif;
+    font-weight: bold;
+  }
+  
+  .desktop-title {
+    font-size: 3rem;
+    color: var(--color-skyblue);
+    margin-bottom: 8px;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  }
+  
+  .desktop-subtitle {
+    font-size: 1.5rem;
+    max-width: 500px;
+    line-height: 1.4;
+    font-family: 'Outfit', sans-serif;
+  }
+}

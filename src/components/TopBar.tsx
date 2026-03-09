@@ -91,9 +91,6 @@ export default function TopBar({ currentView }: TopBarProps) {
       )}
 
       <div className="top-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }} ref={menuRef}>
-        <button className="top-create-btn" onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'create' }))}>
-          +
-        </button>
         <button
           className="top-create-btn"
           onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'profile' }))}

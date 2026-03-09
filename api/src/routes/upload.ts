@@ -24,6 +24,13 @@ const upload = multer({
 
 // POST /upload
 router.post('/', requireAuth, upload.single('image'), async (req: AuthRequest, res: Response) => {
+  console.log('Upload request received:', {
+    hasFile: !!req.file,
+    fileSize: req.file?.size,
+    mimetype: req.file?.mimetype,
+    userId: req.userId
+  });
+
   if (!req.file) {
     res.status(400).json({ error: 'No image provided' });
     return;
@@ -38,15 +45,20 @@ router.post('/', requireAuth, upload.single('image'), async (req: AuthRequest, r
           ]
         },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result as { secure_url: string });
+          if (error) {
+            console.error('Cloudinary upload error:', error);
+            reject(error);
+          } else {
+            resolve(result as { secure_url: string });
+          }
         }
       );
       (stream as any).end(req.file!.buffer);
     });
+    console.log('Upload successful:', result.secure_url);
     res.json({ url: result.secure_url });
   } catch (err) {
-    console.error(err);
+    console.error('Upload route failed:', err);
     res.status(500).json({ error: 'Upload failed' });
   }
 });

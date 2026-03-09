@@ -104,7 +104,6 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
     );
   }
 
-  const gridImages = posts.flatMap(p => p.images || []).slice(0, 9);
 
   return (
     <div className="profile-view">
@@ -196,9 +195,38 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
             </div>
           ) : viewMode === 'grid' ? (
             <div className="profile-grid-clean">
-              {gridImages.map((img, idx) => (
-                <div key={idx} className="grid-cell" onClick={() => setViewMode('journal')} style={{ cursor: 'pointer' }}>
-                  <img src={img} alt={`Post ${idx}`} loading="lazy" />
+              {posts.map((post) => (
+                <div 
+                  key={post.id} 
+                  className="grid-cell" 
+                  onClick={() => setViewMode('journal')} 
+                  style={{ 
+                    cursor: 'pointer',
+                    background: post.text_background || 'rgba(255,255,255,0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '8px',
+                    textAlign: 'center',
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}
+                >
+                  {post.images && post.images.length > 0 ? (
+                    <img src={post.images[0]} alt="Post" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ 
+                      fontSize: '0.75rem', 
+                      color: 'white', 
+                      fontWeight: '700',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {post.caption}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

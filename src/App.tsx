@@ -65,6 +65,18 @@ function AppShell() {
 
   return (
     <div className={`app-shell ${globalTheme}`}>
+      <div className="desktop-only-overlay">
+        <h1 className="desktop-title">8wut</h1>
+        <p className="desktop-subtitle">This is a mobile-first experience. Please scan the code to open 8wut on your phone!</p>
+        <div className="qr-code-container">
+          <img 
+            src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://8wut.org" 
+            alt="QR Code"
+            style={{ width: '200px', height: '200px', display: 'block' }}
+          />
+        </div>
+        <p style={{ opacity: 0.7, fontSize: '1rem', fontStyle: 'italic' }}>8wut.org</p>
+      </div>
       <TopBar currentView={currentView} />
       <main className={`main-content ${currentView === 'create' ? 'create-mode' : ''}`}>
         {currentView === 'feed' && <FeedView />}

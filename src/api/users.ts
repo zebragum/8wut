@@ -43,8 +43,6 @@ export async function getUnreadCount(): Promise<number> {
 export async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('image', file);
-  const { data } = await apiClient.post<{ url: string }>('/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' }
-  });
+  const { data } = await apiClient.post<{ url: string }>('/upload', formData);
   return data.url;
 }
