@@ -16,15 +16,17 @@ export default function BottomNav({ currentView, onViewChange }: BottomNavProps)
         </svg>
       </button>
 
-      <button 
-        className={`nav-item ${currentView === 'create' ? 'active' : ''}`}
-        onClick={() => onViewChange('create')}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-          {/* Bold Thick Plus icon */}
-          <path d="M19 10h-5V5h-4v5H5v4h5v5h4v-5h5v-4z" />
-        </svg>
-      </button>
+      {currentView !== 'create' && (
+        <button 
+          className={`nav-item ${currentView === 'create' ? 'active' : ''}`}
+          onClick={() => onViewChange('create')}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            {/* Bold Thick Plus icon */}
+            <path d="M19 10h-5V5h-4v5H5v4h5v5h4v-5h5v-4z" />
+          </svg>
+        </button>
+      )}
 
       <button 
         className={`nav-item ${currentView === 'eat' ? 'active' : ''}`}

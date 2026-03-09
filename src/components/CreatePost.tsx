@@ -80,7 +80,7 @@ export default function CreatePost() {
     <div className="create-post-view" style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: '20px' }}>
       {/* Image previews or text editor */}
       {hasImages ? (
-        <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', width: '85%', margin: '0 auto' }}>
           <img src={previews[0]} alt="Preview" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />
           <button
             onClick={() => removeImage(0)}
@@ -103,7 +103,7 @@ export default function CreatePost() {
       ) : (
         <div
           className="text-post-preview"
-          style={{ ...bgStyles[bgColor], transition: 'background 0.3s ease', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', aspectRatio: '1 / 1', overflow: 'hidden' }}
+          style={{ ...bgStyles[bgColor], transition: 'background 0.3s ease', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', aspectRatio: '1 / 1', overflow: 'hidden', width: '85%', margin: '0 auto' }}
         >
           <textarea
             className="text-post-input"
@@ -154,7 +154,7 @@ export default function CreatePost() {
       )}
 
       {/* Actions */}
-      <div className="create-actions" style={{ flex: 1, marginTop: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', width: '100%' }}>
+      <div className="create-actions" style={{ flex: 1, marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '32px', width: '100%' }}>
         {/* Camera button */}
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           <button
