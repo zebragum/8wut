@@ -39,10 +39,24 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
     const { rows } = await pool.query(
       `SELECT p.id FROM posts p
        WHERE p.author_id = $1
-         OR p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
+          OR p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
        ORDER BY p.created_at DESC
        LIMIT 50`,
       [req.userId]
+    );
+    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+    res.json(posts.filter(Boolean));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /posts/discovery - all posts from everyone (discovery/home)
+router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id FROM posts ORDER BY created_at DESC LIMIT 50`
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));

@@ -26,6 +26,11 @@ export async function getFeed(): Promise<ApiPost[]> {
   return data;
 }
 
+export async function getDiscoveryFeed(): Promise<ApiPost[]> {
+  const { data } = await apiClient.get<ApiPost[]>('/posts/discovery');
+  return data;
+}
+
 export async function getUserPosts(userId: string): Promise<ApiPost[]> {
   const { data } = await apiClient.get<ApiPost[]>(`/posts/user/${userId}`);
   return data;

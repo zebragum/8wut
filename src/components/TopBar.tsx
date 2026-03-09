@@ -78,7 +78,7 @@ export default function TopBar({ currentView }: TopBarProps) {
     <header className="top-bar">
       <div
         className="top-logo-container"
-        onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications' }))}
+        onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'feed' }))}
         style={{ padding: '24px 0 0 0', marginLeft: '-4px' }}
       >
         <Logo width="63" height="63" className="top-logo" />

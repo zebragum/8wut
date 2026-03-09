@@ -232,7 +232,45 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
             </div>
           ) : (
             <div className="feed-posts" style={{ padding: '0 8px' }}>
-              {posts.map(post => <PostCard key={post.id} post={post} />)}
+              {(() => {
+                const groups: { [key: string]: ApiPost[] } = {};
+                posts.forEach(post => {
+                  const dateStr = new Date(post.created_at).toLocaleDateString('en-US', { 
+                    year: 'numeric', month: 'long', day: 'numeric' 
+                  });
+                  if (!groups[dateStr]) groups[dateStr] = [];
+                  groups[dateStr].push(post);
+                });
+
+                return Object.entries(groups).map(([date, groupPosts]) => {
+                  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                  const yesterdayDate = new Date();
+                  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+                  const yesterday = yesterdayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                  let displayDate = date;
+                  if (date === today) displayDate = 'Today';
+                  else if (date === yesterday) displayDate = 'Yesterday';
+
+                  return (
+                    <div key={date} className="date-group">
+                      <div className="date-separator" style={{ 
+                        margin: '20px 8px 12px 8px', 
+                        padding: '4px 12px', 
+                        background: 'rgba(255,255,255,0.15)', 
+                        borderRadius: '20px', 
+                        color: 'white', 
+                        fontSize: '0.9rem', 
+                        fontWeight: 'bold', 
+                        display: 'inline-block' 
+                      }}>
+                        {displayDate}
+                      </div>
+                      {groupPosts.map(post => <PostCard key={post.id} post={post} />)}
+                    </div>
+                  );
+                });
+              })()}
             </div>
           )}
         </>
