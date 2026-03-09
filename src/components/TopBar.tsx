@@ -148,7 +148,7 @@ export default function TopBar({ currentView }: TopBarProps) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <h4 style={{ margin: '0', color: 'white', textAlign: 'center', gridColumn: '1 / -1' }}>Background Theme</h4>
               {[['Grass', 'theme-grass', '#388e3c'], ['Black', 'theme-black', '#000'], ['Stars', 'theme-stars', '#000033'], ['Rave', 'theme-party', 'linear-gradient(90deg, red, orange, yellow, green, blue, purple)']].map(([label, theme, bg]) => (
-                <button key={theme} style={{ padding: '14px 8px', borderRadius: '8px', border: '1px solid white', background: bg, color: 'var(--color-lavender)', fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer', textShadow: theme === 'theme-party' ? '0 1px 2px rgba(0,0,0,0.5)' : undefined }} onClick={() => window.dispatchEvent(new CustomEvent('change-theme', { detail: theme }))}>{label}</button>
+                <button key={theme} style={{ padding: '14px 8px', borderRadius: '8px', border: '1px solid white', background: bg, color: 'var(--color-lavender)', fontWeight: 'bold', fontSize: '1.05rem', cursor: 'pointer', textShadow: theme === 'theme-party' ? '0 1px 2px rgba(0,0,0,0.5)' : undefined }} onClick={() => { window.dispatchEvent(new CustomEvent('change-theme', { detail: theme })); setShowSettings(false); }}>{label}</button>
               ))}
             </div>
 
