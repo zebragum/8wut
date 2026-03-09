@@ -23,7 +23,15 @@ const upload = multer({
 });
 
 // POST /upload
-router.post('/', requireAuth, upload.single('image'), async (req: AuthRequest, res: Response) => {
+router.post('/', requireAuth, (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      console.error('Multer configuration/parsing error:', err);
+      return res.status(500).json({ error: 'Multer error', details: err.message });
+    }
+    next();
+  });
+}, async (req: AuthRequest, res: Response) => {
   console.log('Upload request received:', {
     hasFile: !!req.file,
     fileSize: req.file?.size,
