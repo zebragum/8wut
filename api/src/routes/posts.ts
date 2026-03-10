@@ -46,9 +46,9 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
@@ -60,9 +60,9 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
@@ -159,9 +159,9 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
 
