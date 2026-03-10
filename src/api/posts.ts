@@ -12,6 +12,7 @@ export interface ApiPost {
   caption: string;
   textBackground?: string;
   text_background?: string;
+  scope?: string;
   created_at: string;
   author: { id: string; username: string; avatarUrl: string };
   images: string[];
@@ -45,13 +46,15 @@ export async function createPost(payload: {
   caption: string;
   textBackground?: string;
   images?: string[];
+  scope?: 'everyone' | 'friends';
+  created_at?: string;
 }): Promise<ApiPost> {
   const { data } = await apiClient.post<ApiPost>('/posts', payload);
   return data;
 }
 
-export async function updatePost(id: string, caption: string): Promise<ApiPost> {
-  const { data } = await apiClient.patch<ApiPost>(`/posts/${id}`, { caption });
+export async function updatePost(id: string, caption: string, created_at?: string): Promise<ApiPost> {
+  const { data } = await apiClient.patch<ApiPost>(`/posts/${id}`, { caption, created_at });
   return data;
 }
 

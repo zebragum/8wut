@@ -109,16 +109,20 @@ export default function FeedView({ filter }: FeedViewProps) {
             <button 
               className={`toggle-btn-sq ${viewMode === 'grid' ? 'active' : ''}`}
               onClick={() => setViewMode('grid')}
-              style={{ fontSize: '0.85rem', padding: '4px 12px' }}
+              style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              grid
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/>
+              </svg>
             </button>
             <button 
               className={`toggle-btn-sq ${viewMode === 'card' ? 'active' : ''}`}
               onClick={() => setViewMode('card')}
-              style={{ fontSize: '0.85rem', padding: '4px 12px' }}
+              style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              card
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="3" y="3" width="18" height="18" rx="3" ry="3"/>
+              </svg>
             </button>
           </div>
         </div>

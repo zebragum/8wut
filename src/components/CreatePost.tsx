@@ -7,13 +7,16 @@ import toast from 'react-hot-toast';
 
 type ColorPreset = 'transparent' | 'skyblue' | 'lavender' | 'orange';
 
-const colors: ColorPreset[] = ['skyblue', 'orange', 'lavender'];
+const colors: ColorPreset[] = ['transparent', 'skyblue', 'orange', 'lavender'];
 
 export default function CreatePost() {
   const [caption, setCaption] = useState('');
   const [bgColor, setBgColor] = useState<ColorPreset>('skyblue');
   
   const [scope, setScope] = useState<'everyone' | 'friends'>('everyone');
+  const [customDate, setCustomDate] = useState(
+    new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
+  );
 
   const [images, setImages] = useState<string[]>([]);
   
@@ -101,7 +104,8 @@ export default function CreatePost() {
         caption: caption.trim(),
         images: images.length ? images : undefined,
         textBackground: bgColor, // This dictates feed text bg OR feed image border color
-        scope
+        scope,
+        created_at: new Date(customDate).toISOString()
       });
       toast.success('Posted! 🎉', { id: toastId });
       window.dispatchEvent(new CustomEvent('navigate', { detail: 'feed' }));
@@ -226,6 +230,20 @@ export default function CreatePost() {
               Post to Everyone
             </label>
 
+            {/* Custom Timestamp */}
+            <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>Post Timestamp</label>
+              <input 
+                type="datetime-local"
+                value={customDate}
+                onChange={e => setCustomDate(e.target.value)}
+                style={{
+                  background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px', padding: '8px 12px', color: 'white', fontFamily: 'inherit'
+                }}
+              />
+            </div>
+
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '32px' }}>
               {/* BIG Central Camera Button */}
               <button
@@ -274,7 +292,7 @@ export default function CreatePost() {
               {submitting ? (
                 <div style={{ width: '24px', height: '24px', border: '3px solid #388e3c', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
               ) : (
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="#388e3c" style={{ marginLeft: '4px' }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill={hasImages ? "red" : "#388e3c"} className={hasImages ? "rainbow-strobe-filter" : ""} style={{ marginLeft: '4px' }}>
                   <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                 </svg>
               )}
@@ -283,7 +301,13 @@ export default function CreatePost() {
         )}
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes hueRotate { to { filter: hue-rotate(360deg) brightness(1.5) saturate(2); } }
+        .rainbow-strobe-filter {
+          animation: hueRotate 0.3s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }

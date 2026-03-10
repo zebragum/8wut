@@ -81,7 +81,7 @@ export default function TopBar({ currentView }: TopBarProps) {
         onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'feed' }))}
         style={{ padding: '24px 0 0 0', marginLeft: '-4px' }}
       >
-        <Logo width="63" height="63" className="top-logo" />
+        <Logo width="94" height="94" className="top-logo" />
       </div>
 
       {showTitle && (
@@ -100,7 +100,7 @@ export default function TopBar({ currentView }: TopBarProps) {
             <img
               src={currentUser.avatar_url}
               alt={currentUser.username}
-              style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(255,255,255,0.7)' }}
+              style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: 'none' }}
             />
           ) : (
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
@@ -125,7 +125,7 @@ export default function TopBar({ currentView }: TopBarProps) {
           }}>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications' })); }}>Notifications</button>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); setShowSettings(true); }}>Settings</button>
-            {currentUser?.is_admin && (
+            {currentUser?.username === 'Zach' && (
               <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'admin' })); }}>Admin Panel</button>
             )}
             <button className="dropdown-item" onClick={() => { setShowMenu(false); window.open(`mailto:zthammond@gmail.com?subject=8wut SUPPORT (${Math.floor(Math.random() * 100000)})`); }}>Help/Support</button>

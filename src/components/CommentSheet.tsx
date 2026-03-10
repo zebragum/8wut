@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getComments, addComment, deleteComment } from '../api/posts';
+import { getComments, addComment } from '../api/posts';
 import type { ApiComment } from '../api/posts';
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
@@ -37,6 +37,7 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
       setComments(prev => [...prev, comment]);
       setNewComment('');
       onCommentAdded?.();
+      onClose();
     } catch {
       toast.error('Could not post comment');
     } finally {
@@ -44,14 +45,7 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
     }
   };
 
-  const handleDelete = async (commentId: string) => {
-    try {
-      await deleteComment(postId, commentId);
-      setComments(prev => prev.filter(c => c.id !== commentId));
-    } catch {
-      toast.error('Could not delete comment');
-    }
-  };
+
 
   const formatTime = (ts: string) => {
     const d = new Date(ts);
@@ -110,7 +104,7 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
                 <img
                   src={comment.author.avatarUrl}
                   alt={comment.author.username}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer' }}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: 'none', cursor: 'pointer' }}
                   onClick={() => { onClose(); window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: comment.author.id } })); }}
                 />
                 <div style={{ flex: 1 }}>
@@ -119,14 +113,6 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
                   <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem' }}>{comment.text}</span>
                   <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', marginTop: '2px' }}>{formatTime(comment.timestamp)}</div>
                 </div>
-                {currentUser?.id === comment.author.id && (
-                  <button
-                    onClick={() => handleDelete(comment.id)}
-                    style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '1.1rem', padding: '0 4px' }}
-                  >
-                    ×
-                  </button>
-                )}
               </div>
             ))
           )}
@@ -140,7 +126,7 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
           <img
             src={currentUser?.avatar_url}
             alt={currentUser?.username}
-            style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }}
+            style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: 'none' }}
           />
           <input
             ref={inputRef}

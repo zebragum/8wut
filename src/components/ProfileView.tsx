@@ -118,7 +118,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
                   position: 'absolute', bottom: 0, right: 0,
                   background: 'var(--color-lavender)', borderRadius: '50%',
                   width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '2px solid white', fontSize: '0.8rem'
+                  border: 'none', fontSize: '0.8rem'
                 }}>📷</div>
               </>
             )}
@@ -148,8 +148,8 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
               onClick={handleFollow}
               disabled={followLoading}
               style={{
-                padding: '8px 24px', borderRadius: '20px', border: isFollowing ? '1px solid white' : 'none',
-                background: isFollowing ? 'transparent' : 'var(--color-orange)',
+                padding: '8px 24px', borderRadius: '20px', border: 'none',
+                background: isFollowing ? 'rgba(255,255,255,0.2)' : 'var(--color-orange)',
                 color: 'white', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer', fontFamily: 'inherit'
               }}
             >
@@ -184,8 +184,16 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
       {activeTab === 'posts' && (
         <>
           <div className="profile-toggles">
-            <button className={`toggle-btn-sq ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}>grid view</button>
-            <button className={`toggle-btn-sq ${viewMode === 'journal' ? 'active' : ''}`} onClick={() => setViewMode('journal')}>daily journal</button>
+            <button className={`toggle-btn-sq ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')} style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/>
+              </svg>
+            </button>
+            <button className={`toggle-btn-sq ${viewMode === 'journal' ? 'active' : ''}`} onClick={() => setViewMode('journal')} style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="3" y="3" width="18" height="18" rx="3" ry="3"/>
+              </svg>
+            </button>
           </div>
 
           {posts.length === 0 ? (
@@ -242,7 +250,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
                   groups[dateStr].push(post);
                 });
 
-                return Object.entries(groups).map(([date, groupPosts]) => {
+                return Object.entries(groups).map(([date, groupPosts], index) => {
                   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                   const yesterdayDate = new Date();
                   yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -251,18 +259,23 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
                   let displayDate = date;
                   if (date === today) displayDate = 'Today';
                   else if (date === yesterday) displayDate = 'Yesterday';
+                  
+                  const colors = ['var(--color-skyblue)', 'var(--color-orange)', 'var(--color-lavender)'];
+                  const barColor = colors[index % 3];
 
                   return (
-                    <div key={date} className="date-group">
+                    <div key={date} className="date-group" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <div className="date-separator" style={{ 
-                        margin: '20px 8px 12px 8px', 
-                        padding: '4px 12px', 
-                        background: 'rgba(255,255,255,0.15)', 
-                        borderRadius: '20px', 
+                        margin: '24px 0 16px 0', 
+                        padding: '6px 0', 
+                        background: barColor, 
                         color: 'white', 
-                        fontSize: '0.9rem', 
+                        fontSize: '0.95rem', 
                         fontWeight: 'bold', 
-                        display: 'inline-block' 
+                        width: '100%',
+                        textAlign: 'center',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
                       }}>
                         {displayDate}
                       </div>

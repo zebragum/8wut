@@ -18,6 +18,9 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
   const [showHeartAnim, setShowHeartAnim] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editCaption, setEditCaption] = useState(post.caption);
+  const [editCreatedAt, setEditCreatedAt] = useState(
+    new Date(new Date(post.created_at).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
+  );
   const [showComments, setShowComments] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -59,7 +62,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
     if (saving) return;
     setSaving(true);
     try {
-      const updated = await updatePost(post.id, editCaption);
+      const updated = await updatePost(post.id, editCaption, new Date(editCreatedAt).toISOString());
       setPost(updated);
       onUpdated?.(updated);
       setIsEditing(false);
@@ -226,6 +229,17 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
                   fontSize: '1rem', minHeight: '60px'
                 }}
               />
+              <input 
+                type="datetime-local"
+                value={editCreatedAt}
+                onChange={e => setEditCreatedAt(e.target.value)}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px',
+                  padding: '8px', color: 'white', fontFamily: 'inherit',
+                  fontSize: '0.9rem'
+                }}
+              />
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button
                   onClick={handleDelete}
@@ -262,6 +276,9 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
                 </span>
                 {' '}
                 <span className="caption-text" style={{ marginLeft: '6px' }}>{post.caption}</span>
+              </div>
+              <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '2px' }}>
+                {new Date(post.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
               </div>
             </div>
           )}

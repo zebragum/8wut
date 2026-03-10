@@ -43,6 +43,22 @@ export async function getUnreadCount(): Promise<number> {
 export async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('image', file);
-  const { data } = await apiClient.post<{ url: string }>('/upload', formData);
+
+  const token = localStorage.getItem('8wut-token');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+  const response = await fetch(`${API_URL}/upload`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error('Upload failed');
+  }
+
+  const data = await response.json();
   return data.url;
 }
