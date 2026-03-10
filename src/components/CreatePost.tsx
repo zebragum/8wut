@@ -1,56 +1,94 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import Cropper, { type Area } from 'react-easy-crop';
+import getCroppedImg from '../utils/cropImage';
 import { createPost } from '../api/posts';
 import { uploadImage } from '../api/users';
 import toast from 'react-hot-toast';
 
 type ColorPreset = 'transparent' | 'skyblue' | 'lavender' | 'orange';
 
-const bgStyles: Record<ColorPreset, React.CSSProperties> = {
-  transparent: { backgroundColor: 'rgba(0,0,0,0.4)' },
-  skyblue: { backgroundColor: 'var(--color-skyblue)' },
-  lavender: { backgroundColor: 'var(--color-lavender)' },
-  orange: { border: '1px solid rgba(255,255,255,0.2)', backgroundColor: 'var(--color-orange)' },
-};
+const colors: ColorPreset[] = ['skyblue', 'orange', 'lavender'];
 
 export default function CreatePost() {
   const [caption, setCaption] = useState('');
-  const [images, setImages] = useState<string[]>([]);      // Cloudinary URLs
-  const [previews, setPreviews] = useState<string[]>([]);  // Local blob URLs for preview
   const [bgColor, setBgColor] = useState<ColorPreset>('skyblue');
+  
+  const [scope, setScope] = useState<'everyone' | 'friends'>('everyone');
+
+  const [images, setImages] = useState<string[]>([]);
+  
+  const [rawFiles, setRawFiles] = useState<File[]>([]);
+  const [cropIndex, setCropIndex] = useState(-1);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     if (images.length + files.length > 5) {
       toast.error('Max 5 images per post');
       return;
     }
+    setRawFiles(files);
+    setCropIndex(0);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+  };
+
+  const onCropComplete = useCallback((_: Area, croppedPixels: Area) => {
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
+
+  const handleApplyCrop = async () => {
+    if (cropIndex < 0 || !rawFiles[cropIndex] || !croppedAreaPixels) return;
     setUploading(true);
-    const toastId = toast.loading(`Uploading ${files.length} image${files.length > 1 ? 's' : ''}...`);
+    const toastId = toast.loading('Applying crop...');
     try {
-      const uploaded = await Promise.all(files.map(f => uploadImage(f)));
-      const localPreviews = files.map(f => URL.createObjectURL(f));
-      setImages(prev => [...prev, ...uploaded]);
-      setPreviews(prev => [...prev, ...localPreviews]);
-      toast.success('Images uploaded!', { id: toastId });
+      const fileUrl = URL.createObjectURL(rawFiles[cropIndex]);
+      const croppedFile = await getCroppedImg(fileUrl, croppedAreaPixels);
+      URL.revokeObjectURL(fileUrl);
+      
+      if (!croppedFile) throw new Error('Failed to crop');
+      
+      const uploadedUrl = await uploadImage(croppedFile);
+      setImages(prev => [...prev, uploadedUrl]);
+      
+      toast.success('Added image', { id: toastId });
+      
+      if (cropIndex + 1 < rawFiles.length) {
+        setCropIndex(cropIndex + 1);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+      } else {
+        setRawFiles([]);
+        setCropIndex(-1);
+      }
     } catch {
-      toast.error('Upload failed. Try again.', { id: toastId });
+      toast.error('Failed to crop/upload image', { id: toastId });
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
     }
   };
 
+  const handleCancelCrop = () => {
+    setRawFiles([]);
+    setCropIndex(-1);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
   const removeImage = (idx: number) => {
     setImages(prev => prev.filter((_, i) => i !== idx));
-    setPreviews(prev => { URL.revokeObjectURL(prev[idx]); return prev.filter((_, i) => i !== idx); });
   };
 
   const handleShare = async () => {
-    if (submitting) return;
+    if (submitting || uploading) return;
     if (!images.length && !caption.trim()) {
       toast.error('Add a photo or write something!');
       return;
@@ -62,10 +100,10 @@ export default function CreatePost() {
       await createPost({
         caption: caption.trim(),
         images: images.length ? images : undefined,
-        textBackground: images.length ? undefined : bgColor,
+        textBackground: bgColor, // This dictates feed text bg OR feed image border color
+        scope
       });
       toast.success('Posted! 🎉', { id: toastId });
-      // Navigate back to feed
       window.dispatchEvent(new CustomEvent('navigate', { detail: 'feed' }));
     } catch {
       toast.error('Could not post. Try again.', { id: toastId });
@@ -75,134 +113,174 @@ export default function CreatePost() {
   };
 
   const hasImages = images.length > 0;
+  const isCropping = cropIndex >= 0;
 
   return (
-    <div className="create-post-view" style={{ display: 'flex', flexDirection: 'column', height: '100%', paddingTop: '20px' }}>
-      {/* Image previews or text editor */}
-      {hasImages ? (
-        <div style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', width: '85%', margin: '0 auto' }}>
-          <img src={previews[0]} alt="Preview" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />
+    <div className="create-post-view" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '20px 20px 80px 20px', overflowY: 'auto' }}>
+      
+      {/* Dynamic Image Area */}
+      {isCropping ? (
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: 'rgba(0,0,0,0.4)', marginBottom: '16px' }}>
+          <Cropper
+            image={URL.createObjectURL(rawFiles[cropIndex])}
+            crop={crop}
+            zoom={zoom}
+            aspect={1}
+            onCropChange={setCrop}
+            onCropComplete={onCropComplete}
+            onZoomChange={setZoom}
+          />
+        </div>
+      ) : hasImages ? (
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', border: `3px solid var(--color-${bgColor})`, marginBottom: '16px' }}>
+          <img src={images[0]} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           <button
             onClick={() => removeImage(0)}
             style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', fontSize: '1rem', zIndex: 10 }}
           >✕</button>
-          {previews.length > 1 && (
-            <div style={{ display: 'flex', gap: '4px', padding: '4px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.3)' }}>
-              {previews.slice(1).map((src, i) => (
-                <div key={i} style={{ position: 'relative' }}>
+          {images.length > 1 && (
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', gap: '4px', padding: '4px', flexWrap: 'nowrap', background: 'rgba(0,0,0,0.6)', overflowX: 'auto' }}>
+              {images.slice(1).map((src, i) => (
+                <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
                   <img src={src} alt={`${i+2}`} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '6px' }} />
                   <button
                     onClick={() => removeImage(i + 1)}
-                    style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', fontSize: '0.7rem', lineHeight: 1 }}
+                    style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.8)', color: 'white', border: 'none', borderRadius: '50%', width: 18, height: 18, cursor: 'pointer', fontSize: '0.7rem', lineHeight: 1 }}
                   >✕</button>
                 </div>
               ))}
             </div>
           )}
         </div>
-      ) : (
-        <div
-          className="text-post-preview"
-          style={{ ...bgStyles[bgColor], transition: 'background 0.3s ease', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', aspectRatio: '1 / 1', overflow: 'hidden', width: '85%', margin: '0 auto' }}
-        >
-          <textarea
-            className="text-post-input"
-            placeholder="Type your post..."
-            value={caption}
-            onChange={e => setCaption(e.target.value)}
-            style={{
-              width: '100%', padding: '24px', fontSize: '1.5rem',
-              textAlign: 'center', fontFamily: 'inherit', resize: 'none',
-              background: 'transparent', border: 'none', color: 'white',
-              height: 'auto', minHeight: '80px', lineHeight: '1.5', outline: 'none'
-            }}
-            rows={3}
-          />
-        </div>
-      )}
+      ) : null}
 
-      {/* Color palette OR caption box */}
-      {hasImages ? (
-        <div className="caption-input" style={{ marginTop: '12px' }}>
-          <textarea
-            placeholder="Write a caption..."
-            value={caption}
-            onChange={e => setCaption(e.target.value)}
-            rows={2}
-            style={{ borderRadius: '8px', width: '100%', padding: '12px', background: 'rgba(0,0,0,0.6)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', fontFamily: 'inherit', fontSize: '1rem', resize: 'none', outline: 'none' }}
-          />
-        </div>
-      ) : (
-        <div className="color-palette" style={{ marginTop: '20px', display: 'flex', gap: '12px', flexWrap: 'nowrap', justifyContent: 'center', width: '100%', padding: '8px 0' }}>
-          {(['transparent', 'skyblue', 'orange', 'lavender'] as ColorPreset[]).map(color => (
-            <button
-              key={color}
+      {/* Input Controls */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+        
+        {isCropping ? (
+          <>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', margin: '0 0 12px 0' }}>
+              {rawFiles.length > 1 ? `Crop image ${cropIndex + 1} of ${rawFiles.length}` : 'Drag to crop'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '300px' }}>
+              <button
+                onClick={handleCancelCrop}
+                disabled={uploading}
+                style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontWeight: 'bold' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyCrop}
+                disabled={uploading}
+                style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'var(--color-skyblue)', border: 'none', color: 'white', fontWeight: 'bold' }}
+              >
+                {uploading ? 'Processing...' : 'Apply Format'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* The single unified caption input */}
+            <textarea
+              className="caption-input"
+              placeholder="Write a caption..."
+              value={caption}
+              onChange={e => setCaption(e.target.value)}
               style={{
-                ...bgStyles[color],
-                width: bgColor === color ? '48px' : '40px',
-                height: bgColor === color ? '48px' : '40px',
-                borderRadius: '50%', flexShrink: 0,
-                border: bgColor === color ? 'none' : '2px solid white',
-                boxShadow: bgColor === color ? '0 0 0 3px white inset, 0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.2)',
-                transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                cursor: 'pointer'
+                borderRadius: '12px', width: '100%', minHeight: '100px',
+                padding: '16px', background: 'rgba(0,0,0,0.6)', color: 'white',
+                border: 'none', fontFamily: 'inherit', fontSize: '1.2rem',
+                resize: 'none', outline: 'none'
               }}
-              onClick={() => setBgColor(color)}
             />
-          ))}
-        </div>
-      )}
 
-      {/* Actions */}
-      <div className="create-actions" style={{ flex: 1, marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '32px', width: '100%' }}>
-        {/* Camera button */}
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <button
-            className="btn-camera"
-            style={{
-              width: '80px', height: '80px', borderRadius: '50%',
-              background: uploading ? 'rgba(206,147,216,0.5)' : 'var(--color-lavender)',
-              border: '2px solid white', color: 'white',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: uploading ? 'wait' : 'pointer',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-              transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-            }}
-            onClick={() => !uploading && fileRef.current?.click()}
-          >
-            {uploading ? (
-              <div style={{ width: '24px', height: '24px', border: '3px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            ) : (
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                <circle cx="12" cy="13" r="3" />
-              </svg>
-            )}
-          </button>
-          {hasImages && images.length < 5 && (
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
-              +{5 - images.length} more
-            </span>
-          )}
-        </div>
+            {/* Color Palette (Always visible to choose feed text bg OR feed image border) */}
+            <div className="color-palette" style={{ display: 'flex', gap: '16px', justifyContent: 'center', width: '100%', marginTop: '24px' }}>
+              {colors.map(color => (
+                <button
+                  key={color}
+                  style={{
+                    backgroundColor: `var(--color-${color})`,
+                    width: bgColor === color ? '44px' : '36px',
+                    height: bgColor === color ? '44px' : '36px',
+                    borderRadius: '50%', flexShrink: 0,
+                    border: 'none',
+                    boxShadow: bgColor === color ? '0 0 0 3px white inset, 0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.2)',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => setBgColor(color)}
+                />
+              ))}
+            </div>
 
-        <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFileChange} />
+            {/* Simple Checkbox Privacy Toggle */}
+            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: 'white', marginTop: '24px', fontSize: '1.1rem', fontWeight: '600', cursor: 'pointer', userSelect: 'none' }}>
+              <input 
+                type="checkbox" 
+                checked={scope === 'everyone'} 
+                onChange={e => setScope(e.target.checked ? 'everyone' : 'friends')} 
+                style={{ width: '22px', height: '22px', cursor: 'pointer' }} 
+              />
+              Post to Everyone
+            </label>
 
-        <button
-          onClick={handleShare}
-          disabled={submitting || uploading}
-          style={{
-            padding: '16px 80px', borderRadius: '32px',
-            background: (submitting || uploading) ? 'rgba(255,183,77,0.5)' : 'var(--color-orange)',
-            border: 'none', color: 'white', fontWeight: 'bold', fontSize: '1.4rem',
-            cursor: (submitting || uploading) ? 'wait' : 'pointer',
-            boxShadow: '0 6px 16px rgba(0,0,0,0.2)',
-            textAlign: 'center', width: '100%', maxWidth: '300px',
-            fontFamily: 'inherit', transition: 'all 0.2s ease'
-          }}
-        >
-          {submitting ? 'Posting...' : 'Share'}
-        </button>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '32px' }}>
+              {/* BIG Central Camera Button */}
+              <button
+                className="btn-camera"
+                style={{
+                  width: '100px', height: '100px', borderRadius: '50%',
+                  background: 'var(--color-lavender)',
+                  border: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                  transition: 'transform 0.2s',
+                  opacity: uploading ? 0.5 : 1
+                }}
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+              >
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="#388e3c">
+                  <circle cx="12" cy="12" r="3.2"/>
+                  <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+                </svg>
+              </button>
+            </div>
+            
+            <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFileChange} />
+
+            {/* Fixed Share Button Centered Bottom */}
+            <button
+              onClick={handleShare}
+              disabled={submitting}
+              style={{
+                position: 'fixed',
+                bottom: 'max(env(safe-area-inset-bottom, 12px), 16px)',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 1001,
+                width: '50px', height: '50px',
+                background: 'var(--color-orange)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: 'none', borderRadius: '50%', cursor: submitting ? 'wait' : 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                transition: 'transform 0.2s',
+                opacity: submitting ? 0.7 : 1
+              }}
+            >
+              {submitting ? (
+                <div style={{ width: '24px', height: '24px', border: '3px solid #388e3c', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              ) : (
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="#388e3c" style={{ marginLeft: '4px' }}>
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                </svg>
+              )}
+            </button>
+          </>
+        )}
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

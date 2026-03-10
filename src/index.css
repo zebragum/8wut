@@ -316,7 +316,7 @@ h1, h2, h3, h4, h5, p {
   height: 150px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid rgba(255,255,255,0.7);
+  border: none;
 }
 
 .profile-info {
@@ -470,7 +470,7 @@ h1, h2, h3, h4, h5, p {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.8);
+  border: none;
   object-fit: cover;
 }
 .author-name {
@@ -696,7 +696,6 @@ h1, h2, h3, h4, h5, p {
   position: relative;
   overflow: hidden;
   aspect-ratio: 1; /* Force square everywhere */
-  border: 3px solid var(--color-skyblue);
   border-radius: 12px;
 }
 .images-slider {

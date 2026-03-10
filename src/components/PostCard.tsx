@@ -111,7 +111,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
               src={post.author.avatarUrl}
               alt={post.author.username}
               className="avatar-small"
-              style={{ width: '36px', height: '36px', border: '1.5px solid white', cursor: 'pointer' }}
+              style={{ width: '36px', height: '36px', border: 'none', cursor: 'pointer' }}
               onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: post.author.id } }))}
             />
             <span
@@ -127,7 +127,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
             <>
               <div
                 className="images-slider"
-                style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
+                style={{ transform: `translateX(-${activeImageIndex * 100}%)`, border: `3px solid var(--color-${textBg || 'skyblue'})`, borderRadius: '12px', boxSizing: 'border-box' }}
               >
                 {post.images.map((img, idx) => (
                   <div key={idx} className="image-slide" onDoubleClick={handleLike}>
