@@ -78,7 +78,7 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
 
 // POST /posts - create a post
 router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { caption, textBackground, images, scope } = req.body;
+  const { caption, textBackground, images, scope, created_at } = req.body;
   const postScope = scope === 'friends' ? 'friends' : 'everyone';
 
   if (!images?.length && !textBackground) {
@@ -89,8 +89,8 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     await client.query('BEGIN');
     const { rows: [post] } = await client.query(
-      'INSERT INTO posts (author_id, caption, text_background, scope) VALUES ($1, $2, $3, $4) RETURNING id',
-      [req.userId, caption || '', textBackground || null, postScope]
+      'INSERT INTO posts (author_id, caption, text_background, scope, created_at) VALUES ($1, $2, $3, $4, COALESCE($5, CURRENT_TIMESTAMP)) RETURNING id',
+      [req.userId, caption || '', textBackground || null, postScope, created_at ? new Date(created_at).toISOString() : null]
     );
     if (images?.length) {
       for (let i = 0; i < images.length; i++) {
@@ -114,11 +114,11 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
 
 // PATCH /posts/:id - edit caption
 router.patch('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { caption } = req.body;
+  const { caption, created_at } = req.body;
   try {
     const { rows: [post] } = await pool.query(
-      'UPDATE posts SET caption = $1 WHERE id = $2 AND author_id = $3 RETURNING id',
-      [caption, req.params.id as string, req.userId]
+      'UPDATE posts SET caption = $1, created_at = COALESCE($4, created_at) WHERE id = $2 AND author_id = $3 RETURNING id',
+      [caption, req.params.id as string, req.userId, created_at ? new Date(created_at).toISOString() : null]
     );
     if (!post) {
       res.status(404).json({ error: 'Post not found or not yours' });
