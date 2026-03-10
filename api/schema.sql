@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS posts (
   author_id       UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   caption         TEXT NOT NULL DEFAULT '',
   text_background TEXT,
+  scope           VARCHAR(20) DEFAULT 'everyone',
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -7,8 +7,8 @@ const router = Router();
 // Helper to fetch a post with all enriched data for a given user
 async function fetchPost(postId: string, viewerId: string) {
   const { rows: [post] } = await pool.query(
-    `SELECT
-       p.id, p.caption, p.text_background, p.created_at,
+      `SELECT
+       p.id, p.caption, p.text_background, p.scope, p.created_at,
        u.id AS author_id, u.username AS author_username, u.avatar_url AS author_avatar,
        (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
        EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $2) AS has_liked,
@@ -56,7 +56,7 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
 router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id FROM posts ORDER BY created_at DESC LIMIT 50`
+      `SELECT id FROM posts WHERE scope = 'everyone' ORDER BY created_at DESC LIMIT 50`
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));
@@ -78,7 +78,9 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
 
 // POST /posts - create a post
 router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { caption, textBackground, images } = req.body;
+  const { caption, textBackground, images, scope } = req.body;
+  const postScope = scope === 'friends' ? 'friends' : 'everyone';
+
   if (!images?.length && !textBackground) {
     res.status(400).json({ error: 'Post must have images or a text background' });
     return;
@@ -87,8 +89,8 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     await client.query('BEGIN');
     const { rows: [post] } = await client.query(
-      'INSERT INTO posts (author_id, caption, text_background) VALUES ($1, $2, $3) RETURNING id',
-      [req.userId, caption || '', textBackground || null]
+      'INSERT INTO posts (author_id, caption, text_background, scope) VALUES ($1, $2, $3, $4) RETURNING id',
+      [req.userId, caption || '', textBackground || null, postScope]
     );
     if (images?.length) {
       for (let i = 0; i < images.length; i++) {
