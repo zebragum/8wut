@@ -11,9 +11,15 @@ import notificationsRoutes from './routes/notifications';
 import usersRoutes from './routes/users';
 import uploadRoutes from './routes/upload';
 import adminRoutes from './routes/admin';
+import pool from './db';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Auto-migrate schema changes
+pool.query("ALTER TABLE posts ADD COLUMN IF NOT EXISTS scope VARCHAR(20) DEFAULT 'everyone'")
+  .then(() => console.log('✅ Auto-migration: scope column ensured'))
+  .catch(err => console.error('❌ Auto-migration failed:', err.message));
 
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
