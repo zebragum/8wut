@@ -39,7 +39,7 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
 router.patch('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   const { username, bio, avatarUrl, topics } = req.body;
   const updates: string[] = [];
-  const values: (string | undefined)[] = [];
+  const values: any[] = [];
   let idx = 1;
 
   if (username?.trim()) {
