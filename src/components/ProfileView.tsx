@@ -26,6 +26,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [editingTopics, setEditingTopics] = useState(false);
   const [topicInput, setTopicInput] = useState('');
+  const [focusedPost, setFocusedPost] = useState<ApiPost | null>(null);
 
   const load = useCallback(async () => {
     if (!targetId) return;
@@ -282,12 +283,12 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
       {activeTab === 'posts' && (
         <>
           <div className="profile-toggles">
-            <button className={`toggle-btn-sq ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')} style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button className={`toggle-btn-sq ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => { setViewMode('grid'); setFocusedPost(null); }} style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 3h8v8H3zm10 0h8v8h-8zM3 13h8v8H3zm10 0h8v8h-8z"/>
               </svg>
             </button>
-            <button className={`toggle-btn-sq ${viewMode === 'journal' ? 'active' : ''}`} onClick={() => setViewMode('journal')} style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button className={`toggle-btn-sq ${viewMode === 'journal' ? 'active' : ''}`} onClick={() => { setViewMode('journal'); setFocusedPost(null); }} style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                 <rect x="3" y="3" width="18" height="18" rx="3" ry="3"/>
               </svg>
@@ -314,7 +315,17 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
 
             return (
               <div className="feed-posts" style={{ padding: '0 8px' }}>
-                {Object.entries(dateGroups).map(([date, groupPosts], index) => {
+                {focusedPost ? (
+                  <>
+                    <button
+                      onClick={() => setFocusedPost(null)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '12px' }}
+                    >
+                      ← Back
+                    </button>
+                    <PostCard post={focusedPost} />
+                  </>
+                ) : Object.entries(dateGroups).map(([date, groupPosts], index) => {
                   const barColor = colors[index % 3];
                   return (
                     <div key={date} className="date-group" style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
@@ -339,7 +350,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
                             <div 
                               key={post.id} 
                               className="grid-cell" 
-                              onClick={() => setViewMode('journal')} 
+                              onClick={() => setFocusedPost(post)} 
                               style={{ 
                                 cursor: 'pointer',
                                 background: post.text_background || 'rgba(255,255,255,0.1)',
@@ -362,7 +373,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
                       )}
                     </div>
                   );
-                })}
+                })})
               </div>
             );
           })()}

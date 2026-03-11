@@ -126,7 +126,7 @@ export default function FeedView({ filter }: FeedViewProps) {
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
             <button 
               className={`toggle-btn-sq ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
+              onClick={() => { setViewMode('grid'); setFocusedPost(null); }}
               style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -135,7 +135,7 @@ export default function FeedView({ filter }: FeedViewProps) {
             </button>
             <button 
               className={`toggle-btn-sq ${viewMode === 'card' ? 'active' : ''}`}
-              onClick={() => setViewMode('card')}
+              onClick={() => { setViewMode('card'); setFocusedPost(null); }}
               style={{ fontSize: '0.85rem', padding: '6px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -212,6 +212,11 @@ export default function FeedView({ filter }: FeedViewProps) {
                     {post.caption}
                   </span>
                 )}
+                {/* Username overlay */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 6px 4px', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <img src={post.author.avatarUrl} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.author.username}</span>
+                </div>
               </div>
             ))}
           </div>
