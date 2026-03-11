@@ -22,6 +22,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
   const [followLoading, setFollowLoading] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [newUsername, setNewUsername] = useState('');
+  const [newBio, setNewBio] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
 
   const load = useCallback(async () => {
@@ -63,19 +64,21 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
     }
   };
 
-  const handleSaveUsername = async (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUsername.trim()) return;
     setSavingProfile(true);
     try {
       await updateUsername(newUsername.trim());
-      setUser(prev => prev ? { ...prev, username: newUsername.trim() } : prev);
+      const { updateMe } = await import('../api/users');
+      await updateMe({ bio: newBio.trim() });
+      setUser(prev => prev ? { ...prev, username: newUsername.trim(), bio: newBio.trim() } : prev);
       setEditingProfile(false);
       setNewUsername('');
-      toast.success('Username updated!');
+      toast.success('Profile updated!');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-      toast.error(msg || 'Could not update username');
+      toast.error(msg || 'Could not update profile');
     } finally {
       setSavingProfile(false);
     }
@@ -138,7 +141,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
           {isOwnProfile ? (
             <button
               className="edit-profile-btn"
-              onClick={() => { setEditingProfile(true); setNewUsername(user.username); }}
+              onClick={() => { setEditingProfile(true); setNewUsername(user.username); setNewBio(user.bio || ''); }}
               style={{ margin: '0 auto' }}
             >
               edit profile
@@ -169,11 +172,18 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
       {/* Overview tab */}
       {activeTab === 'overview' && (
         <div style={{ padding: '1rem', color: 'white' }}>
-          <div style={{ background: 'var(--color-orange)', padding: '12px', borderRadius: '8px', marginBottom: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', textTransform: 'uppercase' }}>Bio</h3>
+          <div style={{ background: 'var(--color-orange)', padding: '12px', borderRadius: '8px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
             <p style={{ lineHeight: 1.5, fontSize: '1.1rem', margin: 0 }}>
               {user.bio || 'No bio yet.'}
             </p>
           </div>
+
+          <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', textTransform: 'uppercase' }}>Groups</h3>
+          <div style={{ border: '2px dashed rgba(255,255,255,0.3)', padding: '24px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
+            <p style={{ margin: 0, opacity: 0.7, fontWeight: 500 }}>Groups functionality is coming soon! Hang tight.</p>
+          </div>
+
           <p style={{ textAlign: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
             Member since {new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </p>
@@ -310,18 +320,31 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
           onClick={() => setEditingProfile(false)}
         >
           <form
-            onSubmit={handleSaveUsername}
+            onSubmit={handleSaveProfile}
             style={{ background: 'var(--color-skyblue)', padding: '24px', borderRadius: '20px', width: '100%', maxWidth: '360px', display: 'flex', flexDirection: 'column', gap: '16px' }}
             onClick={e => e.stopPropagation()}
           >
             <h3 style={{ margin: 0, color: 'white', textAlign: 'center' }}>Edit Profile</h3>
-            <input
-              type="text"
-              value={newUsername}
-              onChange={e => setNewUsername(e.target.value)}
-              placeholder="New username"
-              style={{ padding: '12px', borderRadius: '8px', border: 'none', fontFamily: 'inherit', fontSize: '1rem' }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', paddingLeft: '4px' }}>Username</label>
+              <input
+                type="text"
+                value={newUsername}
+                onChange={e => setNewUsername(e.target.value)}
+                placeholder="New username"
+                style={{ padding: '12px', borderRadius: '8px', border: 'none', fontFamily: 'inherit', fontSize: '1rem' }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', paddingLeft: '4px' }}>Bio</label>
+              <textarea
+                value={newBio}
+                onChange={e => setNewBio(e.target.value)}
+                placeholder="Write a little about yourself..."
+                rows={3}
+                style={{ padding: '12px', borderRadius: '8px', border: 'none', fontFamily: 'inherit', fontSize: '1rem', resize: 'vertical' }}
+              />
+            </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button type="button" onClick={() => setEditingProfile(false)}
                 style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'transparent', border: '1px solid white', color: 'white', fontFamily: 'inherit', cursor: 'pointer' }}>

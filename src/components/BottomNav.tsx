@@ -16,7 +16,7 @@ export default function BottomNav({ currentView, onViewChange }: BottomNavProps)
         </svg>
       </button>
 
-      {currentView !== 'create' && (
+      {currentView === 'create' ? <div style={{width: 50, height: 50}} /> : (
         <button 
           className={`nav-item ${currentView === 'create' ? 'active' : ''}`}
           onClick={() => onViewChange('create')}

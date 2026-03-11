@@ -209,7 +209,7 @@ export default function CreatePost() {
                     width: bgColor === color ? '44px' : '36px',
                     height: bgColor === color ? '44px' : '36px',
                     borderRadius: '50%', flexShrink: 0,
-                    border: 'none',
+                    border: color === 'transparent' ? '1.5px solid rgba(255,255,255,0.7)' : 'none',
                     boxShadow: bgColor === color ? '0 0 0 3px white inset, 0 4px 12px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.2)',
                     transition: 'all 0.2s ease',
                     cursor: 'pointer'
