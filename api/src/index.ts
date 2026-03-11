@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import pool from './db';
 import authRoutes from './routes/auth';
 import postsRoutes from './routes/posts';
 import likesRoutes from './routes/likes';
@@ -34,6 +35,10 @@ app.use('/users', followsRoutes);
 app.use('/notifications', notificationsRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/admin', adminRoutes);
+
+pool.query('ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_hearted BOOLEAN DEFAULT FALSE;')
+  .then(() => console.log('Live PostgreSQL migration complete: is_hearted column verified'))
+  .catch((err) => console.error('Migration failed:', err));
 
 app.listen(PORT, () => {
   console.log(`8wut API running on port ${PORT}`);
