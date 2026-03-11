@@ -3,6 +3,7 @@ import apiClient from './client';
 export interface ApiComment {
   id: string;
   text: string;
+  isHearted?: boolean;
   timestamp: string;
   author: { id: string; username: string; avatarUrl: string };
 }
@@ -20,6 +21,7 @@ export interface ApiPost {
   hasLiked: boolean;
   savedToFridge: boolean;
   commentsCount: number;
+  heartedComments?: ApiComment[];
 }
 
 export async function getFeed(): Promise<ApiPost[]> {
@@ -94,4 +96,9 @@ export async function addComment(postId: string, text: string): Promise<ApiComme
 
 export async function deleteComment(postId: string, commentId: string): Promise<void> {
   await apiClient.delete(`/posts/${postId}/comments/${commentId}`);
+}
+
+export async function heartComment(postId: string, commentId: string): Promise<{ isHearted: boolean }> {
+  const { data } = await apiClient.patch<{ isHearted: boolean }>(`/posts/${postId}/comments/${commentId}/heart`);
+  return data;
 }

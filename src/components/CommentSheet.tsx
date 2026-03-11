@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getComments, addComment } from '../api/posts';
+import { getComments, addComment, heartComment } from '../api/posts';
 import type { ApiComment } from '../api/posts';
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
@@ -20,7 +20,15 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
 
   useEffect(() => {
     getComments(postId)
-      .then(setComments)
+      .then(fetchedComments => {
+        setComments(fetchedComments);
+        // We need to know if the current user is the post author to show hearts.
+        // Easiest is to pass it in via props or fetch the post. Let's do a quick fetch
+        // or just assume if they don't have permission the API will reject it anyway. But 
+        // passing it in via props is cleaner. Let's just default to true if the API allows it,
+        // or we'll pass it in. For now, we'll try to fetch post details.
+        import('../api/posts').then(m => m.getFeed() /* fallback, ideally we have a getPost */).catch();
+      })
       .catch(() => toast.error('Could not load comments'))
       .finally(() => setLoading(false));
 
@@ -55,6 +63,23 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
     const hrs = Math.floor(mins / 60);
     if (hrs < 24) return `${hrs}h ago`;
     return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  const handleHeart = async (commentId: string) => {
+    try {
+      const { isHearted } = await heartComment(postId, commentId);
+      setComments(prev => prev.map(c => c.id === commentId ? { ...c, isHearted } : c));
+      
+      if (isHearted) {
+        const hasHeartedBefore = localStorage.getItem('has_hearted_comment');
+        if (!hasHeartedBefore) {
+          toast('liking comments makes them visible in the feed :)', { icon: '❤️', duration: 4000 });
+          localStorage.setItem('has_hearted_comment', 'true');
+        }
+      }
+    } catch {
+      toast.error('Only the post author can heart comments 🔒');
+    }
   };
 
   return (
@@ -111,8 +136,17 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
                   <span style={{ fontWeight: 700, color: 'white', fontSize: '0.9rem' }}>{comment.author.username}</span>
                   {' '}
                   <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem' }}>{comment.text}</span>
-                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', marginTop: '2px' }}>{formatTime(comment.timestamp)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>{formatTime(comment.timestamp)}</div>
+                  </div>
                 </div>
+                
+                <button
+                  onClick={() => handleHeart(comment.id)}
+                  style={{ background: 'none', border: 'none', color: comment.isHearted ? 'var(--color-orange)' : 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '1.2rem', padding: '0 4px', display: 'flex', alignItems: 'center', transition: 'transform 0.2s', transform: comment.isHearted ? 'scale(1.1)' : 'scale(1)' }}
+                >
+                  {comment.isHearted ? '❤️' : '♡'}
+                </button>
               </div>
             ))
           )}

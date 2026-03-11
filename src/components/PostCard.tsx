@@ -282,6 +282,31 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
               </div>
             </div>
           )}
+
+          {/* Hearted Comments Inline Display */}
+          {post.heartedComments && post.heartedComments.length > 0 && (
+            <div className="hearted-comments-inline" style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {post.heartedComments.map(hc => (
+                <div key={hc.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                  <img
+                    src={hc.author.avatarUrl}
+                    alt={hc.author.username}
+                    style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover', marginTop: '3px', cursor: 'pointer' }}
+                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: hc.author.id } }))}
+                  />
+                  <div style={{ flex: 1, fontSize: '0.9rem', lineHeight: '1.2' }}>
+                    <span 
+                      style={{ fontWeight: 600, color: 'white', cursor: 'pointer', marginRight: '4px' }}
+                      onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: hc.author.id } }))}
+                    >
+                      {hc.author.username}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.85)' }}>{hc.text}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
