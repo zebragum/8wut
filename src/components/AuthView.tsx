@@ -63,9 +63,8 @@ export default function AuthView() {
       overflowY: 'auto'
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
-        <img src="/8logo.svg" alt="8wut logo" style={{ width: '120px', height: '120px', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }} />
-        <h1 style={{ fontFamily: 'Fredoka One', fontSize: '3rem', margin: '8px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>8wut</h1>
-        <p style={{ opacity: 0.8, marginTop: 0 }}>Community Food Photojournaling</p>
+        <img src="/8logo.svg" alt="8wut logo" style={{ width: '220px', height: '220px', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }} />
+        <p style={{ opacity: 0.8, marginTop: '16px' }}>Community Food Photojournaling</p>
       </div>
 
       <form

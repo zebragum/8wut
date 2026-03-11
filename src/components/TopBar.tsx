@@ -79,7 +79,7 @@ export default function TopBar({ currentView }: TopBarProps) {
       <div
         className="top-logo-container"
         onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'feed' }))}
-        style={{ padding: '24px 0 0 0', marginLeft: '-4px' }}
+        style={{ padding: '28px 0 0 0', marginLeft: '-12px' }}
       >
         <Logo width="94" height="94" className="top-logo" />
       </div>
