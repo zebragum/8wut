@@ -13,7 +13,7 @@ export default function FeedView({ filter }: FeedViewProps) {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [scope, setScope] = useState<'everyone' | 'friends'>('everyone');
+  const [scope, setScope] = useState<'everyone' | 'friends' | 'groups'>('everyone');
   const [viewMode, setViewMode] = useState<'grid' | 'card'>('card');
 
   const loadPosts = useCallback(async () => {
@@ -25,7 +25,14 @@ export default function FeedView({ filter }: FeedViewProps) {
       if (filter === 'fridge') {
         data = await getUserFridgePosts(currentUser.id);
       } else {
-        data = scope === 'everyone' ? await getDiscoveryFeed() : await getFeed();
+        if (scope === 'everyone') {
+          data = await getDiscoveryFeed();
+        } else if (scope === 'friends') {
+          data = await getFeed();
+        } else {
+          const { getGroupsFeed } = await import('../api/posts');
+          data = await getGroupsFeed();
+        }
       }
       setPosts(data);
     } catch {
@@ -102,6 +109,16 @@ export default function FeedView({ filter }: FeedViewProps) {
             >
               Friends
             </button>
+            <button 
+              onClick={() => setScope('groups')}
+              style={{ 
+                padding: '6px 20px', borderRadius: '16px', border: 'none', 
+                background: scope === 'groups' ? 'var(--color-orange)' : 'transparent',
+                color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem'
+              }}
+            >
+              Groups
+            </button>
           </div>
 
           {/* View Toggle: Grid | Card */}
@@ -143,7 +160,7 @@ export default function FeedView({ filter }: FeedViewProps) {
           )}
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="profile-grid-clean" style={{ padding: '0 8px' }}>
+        <div className="profile-grid-clean" style={{ padding: '0 8px', gridTemplateColumns: 'repeat(2, 1fr)' }}>
           {posts.map(post => (
             <div 
               key={post.id} 

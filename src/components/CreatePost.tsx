@@ -5,16 +5,20 @@ import { createPost } from '../api/posts';
 import { uploadImage } from '../api/users';
 import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
+import { useAuth } from '../AuthContext';
 
 type ColorPreset = 'transparent' | 'skyblue' | 'lavender' | 'orange';
 
 const colors: ColorPreset[] = ['transparent', 'skyblue', 'orange', 'lavender'];
 
 export default function CreatePost() {
+  const { currentUser } = useAuth();
   const [caption, setCaption] = useState('');
   const [bgColor, setBgColor] = useState<ColorPreset>('skyblue');
   
-  const [scope, setScope] = useState<'everyone' | 'friends'>('everyone');
+  const [scope, setScope] = useState<'everyone' | 'friends' | 'groups'>(
+    currentUser?.topics && currentUser.topics.length > 0 ? 'groups' : 'everyone'
+  );
   const [customDate, setCustomDate] = useState(
     new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
   );
@@ -220,16 +224,42 @@ export default function CreatePost() {
               ))}
             </div>
 
-            {/* Simple Checkbox Privacy Toggle */}
-            <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: 'white', marginTop: '24px', fontSize: '1.1rem', fontWeight: '600', cursor: 'pointer', userSelect: 'none' }}>
-              <input 
-                type="checkbox" 
-                checked={scope === 'everyone'} 
-                onChange={e => setScope(e.target.checked ? 'everyone' : 'friends')} 
-                style={{ width: '22px', height: '22px', cursor: 'pointer' }} 
-              />
-              Post to Everyone
-            </label>
+            {/* 3-way Privacy Toggle */}
+            <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', padding: '4px', marginTop: '24px' }}>
+              <button 
+                type="button"
+                onClick={() => setScope('everyone')}
+                style={{ 
+                  padding: '6px 16px', borderRadius: '16px', border: 'none', 
+                  background: scope === 'everyone' ? 'var(--color-orange)' : 'transparent',
+                  color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem'
+                }}
+              >
+                Everyone
+              </button>
+              <button 
+                type="button"
+                onClick={() => setScope('friends')}
+                style={{ 
+                  padding: '6px 16px', borderRadius: '16px', border: 'none', 
+                  background: scope === 'friends' ? 'var(--color-orange)' : 'transparent',
+                  color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem'
+                }}
+              >
+                Friends
+              </button>
+              <button 
+                type="button"
+                onClick={() => setScope('groups')}
+                style={{ 
+                  padding: '6px 16px', borderRadius: '16px', border: 'none', 
+                  background: scope === 'groups' ? 'var(--color-orange)' : 'transparent',
+                  color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem'
+                }}
+              >
+                Groups
+              </button>
+            </div>
 
             {/* Custom Timestamp */}
             <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
@@ -253,7 +283,7 @@ export default function CreatePost() {
                   width: '100px', height: '100px', borderRadius: '50%',
                   background: 'var(--color-lavender)',
                   border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer',
                   boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
                   transition: 'transform 0.2s',
@@ -262,13 +292,20 @@ export default function CreatePost() {
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
               >
-                <div style={{ width: 100, height: 100, position: 'relative' }}>
-                  <img src="/8logo.svg" alt="Camera" style={{ position: 'absolute', width: 100, height: 200, left: 0, top: -100, objectFit: 'cover' }} />
-                </div>
+                {/* Camera Aperture SVG */}
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="14.31" y1="8" x2="20.05" y2="17.94" />
+                  <line x1="9.69" y1="8" x2="21.17" y2="8" />
+                  <line x1="7.38" y1="12" x2="13.12" y2="2.06" />
+                  <line x1="9.69" y1="16" x2="3.95" y2="6.06" />
+                  <line x1="14.31" y1="16" x2="2.83" y2="16" />
+                  <line x1="16.62" y1="12" x2="10.88" y2="21.94" />
+                </svg>
               </button>
             </div>
             
-            <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFileChange} />
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple style={{ display: 'none' }} onChange={handleFileChange} />
 
             {/* Fixed Share Button Centered Bottom, Portaled to escape transform traps */}
             {createPortal(

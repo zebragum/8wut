@@ -24,6 +24,8 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
   const [newUsername, setNewUsername] = useState('');
   const [newBio, setNewBio] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [editingTopics, setEditingTopics] = useState(false);
+  const [topicInput, setTopicInput] = useState('');
 
   const load = useCallback(async () => {
     if (!targetId) return;
@@ -69,18 +71,51 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
     if (!newUsername.trim()) return;
     setSavingProfile(true);
     try {
-      await updateUsername(newUsername.trim());
+      if (newUsername.trim() !== currentUser?.username) {
+        await updateUsername(newUsername.trim());
+      }
       const { updateMe } = await import('../api/users');
+      // If we are editing profile normally (not specifically editing topics in overview)
+      // we just update bio/username. Topics are decoupled.
       await updateMe({ bio: newBio.trim() });
       setUser(prev => prev ? { ...prev, username: newUsername.trim(), bio: newBio.trim() } : prev);
       setEditingProfile(false);
-      setNewUsername('');
       toast.success('Profile updated!');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       toast.error(msg || 'Could not update profile');
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handleAddTopic = async () => {
+    if (!topicInput.trim() || !user) return;
+    const currentTopics = user.topics || [];
+    if (currentTopics.includes(topicInput.trim().toLowerCase())) {
+      setTopicInput('');
+      return;
+    }
+    const newTopics = [...currentTopics, topicInput.trim().toLowerCase()];
+    try {
+      const { updateMe } = await import('../api/users');
+      await updateMe({ topics: newTopics });
+      setUser(prev => prev ? { ...prev, topics: newTopics } : prev);
+      setTopicInput('');
+    } catch {
+      toast.error('Could not add topic');
+    }
+  };
+
+  const handleRemoveTopic = async (topicToRemove: string) => {
+    if (!user) return;
+    const newTopics = (user.topics || []).filter(t => t !== topicToRemove);
+    try {
+      const { updateMe } = await import('../api/users');
+      await updateMe({ topics: newTopics });
+      setUser(prev => prev ? { ...prev, topics: newTopics } : prev);
+    } catch {
+      toast.error('Could not remove topic');
     }
   };
 
@@ -138,6 +173,19 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
             <div><span className="count">{user.followers_count || 0}</span><span className="label"> followers</span></div>
           </div>
 
+          {user.topics && user.topics.length > 0 && (
+            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
+              {user.topics.slice(0, 2).map((topic, i) => (
+                <span key={i} style={{ 
+                  background: 'white', color: 'var(--color-skyblue)', border: '1px solid var(--color-skyblue)',
+                  padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' 
+                }}>
+                  {topic}
+                </span>
+              ))}
+            </div>
+          )}
+
           {isOwnProfile ? (
             <button
               className="edit-profile-btn"
@@ -180,8 +228,48 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
           </div>
 
           <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', textTransform: 'uppercase' }}>Groups</h3>
-          <div style={{ border: '2px dashed rgba(255,255,255,0.3)', padding: '24px', borderRadius: '8px', marginBottom: '24px', textAlign: 'center' }}>
-            <p style={{ margin: 0, opacity: 0.7, fontWeight: 500 }}>Groups functionality is coming soon! Hang tight.</p>
+          <div style={{ padding: '0 0 24px 0' }}>
+            {(!user.topics || user.topics.length === 0) && !editingTopics ? (
+              <div style={{ border: '2px dashed rgba(255,255,255,0.3)', padding: '24px', borderRadius: '8px', textAlign: 'center' }}>
+                <p style={{ margin: 0, opacity: 0.7, fontWeight: 500 }}>You haven't added any topics yet.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                {(user.topics || []).map(topic => (
+                  <div key={topic} style={{ display: 'flex', alignItems: 'center', background: 'white', color: 'var(--color-skyblue)', border: '1px solid var(--color-skyblue)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.95rem' }}>
+                    {topic}
+                    {editingTopics && (
+                      <button onClick={() => handleRemoveTopic(topic)} style={{ background: 'none', border: 'none', color: '#ff4444', marginLeft: '8px', cursor: 'pointer', fontSize: '1.1rem', padding: 0, display: 'flex', alignItems: 'center' }}>×</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {editingTopics && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                <input 
+                  type="text" 
+                  value={topicInput} 
+                  onChange={e => setTopicInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddTopic()}
+                  placeholder="e.g. food journalers"
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: 'none', fontFamily: 'inherit' }}
+                />
+                <button onClick={handleAddTopic} style={{ background: 'var(--color-skyblue)', border: 'none', color: 'white', borderRadius: '8px', padding: '0 16px', fontWeight: 'bold', cursor: 'pointer' }}>Add</button>
+              </div>
+            )}
+            
+            {isOwnProfile && (
+              <div style={{ textAlign: 'right', marginTop: '8px' }}>
+                <button 
+                  onClick={() => setEditingTopics(!editingTopics)} 
+                  style={{ background: 'none', border: 'none', color: 'white', opacity: 0.8, fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer', padding: 0 }}
+                >
+                  {editingTopics ? 'done <<' : 'add/edit topics >>'}
+                </button>
+              </div>
+            )}
           </div>
 
           <p style={{ textAlign: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
@@ -253,43 +341,38 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
               {(() => {
                 const groups: { [key: string]: ApiPost[] } = {};
                 posts.forEach(post => {
-                  const dateStr = new Date(post.created_at).toLocaleDateString('en-US', { 
-                    year: 'numeric', month: 'long', day: 'numeric' 
-                  });
+                  const dateObj = new Date(post.created_at);
+                  const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long' }) + ', ' + 
+                                  dateObj.toLocaleDateString('en-US', { month: 'short' }) + '. ' + 
+                                  dateObj.getDate() + ', ' + dateObj.getFullYear();
                   if (!groups[dateStr]) groups[dateStr] = [];
                   groups[dateStr].push(post);
                 });
 
                 return Object.entries(groups).map(([date, groupPosts], index) => {
-                  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-                  const yesterdayDate = new Date();
-                  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-                  const yesterday = yesterdayDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-
-                  let displayDate = date;
-                  if (date === today) displayDate = 'Today';
-                  else if (date === yesterday) displayDate = 'Yesterday';
-                  
                   const colors = ['var(--color-skyblue)', 'var(--color-orange)', 'var(--color-lavender)'];
                   const barColor = colors[index % 3];
 
                   return (
-                    <div key={date} className="date-group" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div key={date} className="date-group" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
                       <div className="date-separator" style={{ 
-                        margin: '24px 0 16px 0', 
-                        padding: '6px 0', 
+                        margin: '16px 0 -8px 0', 
+                        padding: '12px 16px', 
                         background: barColor, 
                         color: 'white', 
-                        fontSize: '0.95rem', 
-                        fontWeight: 'bold', 
-                        width: '100%',
-                        textAlign: 'center',
-                        textShadow: '0 1px 2px rgba(0,0,0,0.3)',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                        fontSize: '1.2rem', 
+                        fontWeight: 'normal', 
+                        width: 'calc(100% + 16px)',
+                        marginLeft: '-8px',
+                        marginRight: '-8px',
+                        textAlign: 'left',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                       }}>
-                        {displayDate}
+                        {date}
                       </div>
-                      {groupPosts.map(post => <PostCard key={post.id} post={post} />)}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px', width: '100%', marginTop: '10px' }}>
+                        {groupPosts.map(post => <PostCard key={post.id} post={post} />)}
+                      </div>
                     </div>
                   );
                 });

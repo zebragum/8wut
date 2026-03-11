@@ -60,6 +60,32 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /posts/groups - posts from groups you are in
+router.get('/groups', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows: [currentUser] } = await pool.query('SELECT topics FROM users WHERE id = $1', [req.userId]);
+    const userTopics = currentUser?.topics || [];
+
+    if (!userTopics || userTopics.length === 0) {
+      return res.json([]);
+    }
+
+    const { rows } = await pool.query(
+      `SELECT p.id FROM posts p
+       JOIN users u ON u.id = p.author_id
+       WHERE p.scope = 'groups' AND u.topics && $1
+       ORDER BY p.created_at DESC
+       LIMIT 50`,
+      [userTopics]
+    );
+    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+    res.json(posts.filter(Boolean));
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
 // GET /posts/discovery - all posts from everyone (discovery/home)
 router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
@@ -87,7 +113,9 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
 // POST /posts - create a post
 router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   const { caption, textBackground, images, scope, created_at } = req.body;
-  const postScope = scope === 'friends' ? 'friends' : 'everyone';
+  let postScope = 'everyone';
+  if (scope === 'friends') postScope = 'friends';
+  if (scope === 'groups') postScope = 'groups';
 
   if (!images?.length && !textBackground) {
     res.status(400).json({ error: 'Post must have images or a text background' });

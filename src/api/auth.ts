@@ -11,6 +11,7 @@ export interface ApiUser {
   following_count?: number;
   post_count?: number;
   is_following?: boolean;
+  topics?: string[];
 }
 
 export async function login(username: string, password: string) {

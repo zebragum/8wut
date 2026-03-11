@@ -34,6 +34,11 @@ export async function getDiscoveryFeed(): Promise<ApiPost[]> {
   return data;
 }
 
+export async function getGroupsFeed(): Promise<ApiPost[]> {
+  const { data } = await apiClient.get<ApiPost[]>('/posts/groups');
+  return data;
+}
+
 export async function getUserPosts(userId: string): Promise<ApiPost[]> {
   const { data } = await apiClient.get<ApiPost[]>(`/posts/user/${userId}`);
   return data;
@@ -48,7 +53,7 @@ export async function createPost(payload: {
   caption: string;
   textBackground?: string;
   images?: string[];
-  scope?: 'everyone' | 'friends';
+  scope?: 'everyone' | 'friends' | 'groups';
   created_at?: string;
 }): Promise<ApiPost> {
   const { data } = await apiClient.post<ApiPost>('/posts', payload);

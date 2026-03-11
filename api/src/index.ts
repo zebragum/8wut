@@ -36,8 +36,11 @@ app.use('/notifications', notificationsRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/admin', adminRoutes);
 
-pool.query('ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_hearted BOOLEAN DEFAULT FALSE;')
-  .then(() => console.log('Live PostgreSQL migration complete: is_hearted column verified'))
+pool.query(`
+  ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_hearted BOOLEAN DEFAULT FALSE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS topics TEXT[] DEFAULT '{}';
+`)
+  .then(() => console.log('Live PostgreSQL migrations complete'))
   .catch((err) => console.error('Migration failed:', err));
 
 app.listen(PORT, () => {
