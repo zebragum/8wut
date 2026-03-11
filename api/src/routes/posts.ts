@@ -42,13 +42,12 @@ async function fetchPost(postId: string, viewerId: string) {
   };
 }
 
-// GET /posts/feed - posts from people you follow + your own
+// GET /posts/feed - posts from people you follow
 router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
       `SELECT p.id FROM posts p
-       WHERE p.author_id = $1
-          OR p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
+       WHERE p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
        ORDER BY p.created_at DESC
        LIMIT 50`,
       [req.userId]
