@@ -16,7 +16,7 @@ router.post('/:id/like', requireAuth, async (req: AuthRequest, res: Response) =>
     if (post && post.author_id !== req.userId) {
       await pool.query(
         `INSERT INTO notifications (recipient_id, actor_id, type, post_id)
-         VALUES ($1, $2, 'like', $3) ON CONFLICT DO NOTHING`,
+         VALUES ($1, $2, 'liked wut u 8', $3) ON CONFLICT DO NOTHING`,
         [post.author_id, req.userId, req.params.id]
       );
     }

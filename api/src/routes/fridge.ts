@@ -15,7 +15,7 @@ router.post('/:id/fridge', requireAuth, async (req: AuthRequest, res: Response) 
     const { rows: [post] } = await pool.query('SELECT author_id FROM posts WHERE id = $1', [req.params.id]);
     if (post && post.author_id !== req.userId) {
       await pool.query(
-        `INSERT INTO notifications (recipient_id, actor_id, type, post_id) VALUES ($1, $2, 'fridge', $3)`,
+        `INSERT INTO notifications (recipient_id, actor_id, type, post_id) VALUES ($1, $2, 'added ur 8 to their fridge', $3)`,
         [post.author_id, req.userId, req.params.id]
       );
     }

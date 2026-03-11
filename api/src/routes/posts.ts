@@ -14,6 +14,14 @@ async function fetchPost(postId: string, viewerId: string) {
        EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $2) AS has_liked,
        EXISTS(SELECT 1 FROM fridge_saves WHERE post_id = p.id AND user_id = $2) AS saved_to_fridge,
        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comments_count,
+       (SELECT json_agg(
+          json_build_object(
+            'id', hc.id,
+            'text', hc.text,
+            'created_at', hc.created_at,
+            'author', json_build_object('id', u2.id, 'username', u2.username, 'avatarUrl', u2.avatar_url)
+          ) ORDER BY hc.created_at ASC
+        ) FROM comments hc JOIN users u2 ON u2.id = hc.author_id WHERE hc.post_id = p.id AND hc.is_hearted = TRUE) AS hearted_comments,
        (SELECT json_agg(json_build_object('url', pi.url, 'sort_order', pi.sort_order) ORDER BY pi.sort_order)
         FROM post_images pi WHERE pi.post_id = p.id) AS images
      FROM posts p
@@ -30,6 +38,7 @@ async function fetchPost(postId: string, viewerId: string) {
     hasLiked: post.has_liked,
     savedToFridge: post.saved_to_fridge,
     commentsCount: parseInt(post.comments_count),
+    heartedComments: post.hearted_comments || []
   };
 }
 

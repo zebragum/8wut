@@ -8,7 +8,7 @@ const router = Router();
 router.get('/:id/comments', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { rows } = await pool.query(
-      `SELECT c.id, c.text, c.created_at,
+      `SELECT c.id, c.text, c.created_at, c.is_hearted,
               u.id AS author_id, u.username, u.avatar_url
        FROM comments c
        JOIN users u ON u.id = c.author_id
@@ -19,6 +19,7 @@ router.get('/:id/comments', requireAuth, async (req: AuthRequest, res: Response)
     res.json(rows.map(r => ({
       id: r.id,
       text: r.text,
+      isHearted: r.is_hearted,
       timestamp: r.created_at,
       author: { id: r.author_id, username: r.username, avatarUrl: r.avatar_url }
     })));
@@ -48,7 +49,7 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res: Response
     const { rows: [post] } = await pool.query('SELECT author_id FROM posts WHERE id = $1', [req.params.id]);
     if (post && post.author_id !== req.userId) {
       await pool.query(
-        `INSERT INTO notifications (recipient_id, actor_id, type, post_id) VALUES ($1, $2, 'comment', $3)`,
+        `INSERT INTO notifications (recipient_id, actor_id, type, post_id) VALUES ($1, $2, 'commented on wut u 8', $3)`,
         [post.author_id, req.userId, req.params.id]
       );
     }
@@ -76,6 +77,30 @@ router.delete('/:postId/comments/:commentId', requireAuth, async (req: AuthReque
       return;
     }
     res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// PATCH /posts/:postId/comments/:commentId/heart
+router.patch('/:postId/comments/:commentId/heart', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    // Only post author can heart comments
+    const { rows: [post] } = await pool.query('SELECT author_id FROM posts WHERE id = $1', [req.params.postId]);
+    if (!post || post.author_id !== req.userId) {
+      res.status(403).json({ error: 'Only the post author can heart comments' });
+      return;
+    }
+    const { rows: [comment] } = await pool.query(
+      'UPDATE comments SET is_hearted = NOT is_hearted WHERE id = $1 AND post_id = $2 RETURNING is_hearted',
+      [req.params.commentId, req.params.postId]
+    );
+    if (!comment) {
+      res.status(404).json({ error: 'Comment not found' });
+      return;
+    }
+    res.json({ isHearted: comment.is_hearted });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

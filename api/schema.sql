@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS comments (
   post_id     UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
   author_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   text        TEXT NOT NULL,
+  is_hearted  BOOLEAN DEFAULT FALSE,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
