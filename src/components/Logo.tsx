@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-export default function Logo({ className = "", width = 80, height = 80 }: { className?: string; width?: number | string; height?: number | string }) {
+export default function Logo({ className = "", width = 80, height = 80, noText = false }: { className?: string; width?: number | string; height?: number | string; noText?: boolean }) {
   const [isRave, setIsRave] = useState(false);
 
   useEffect(() => {
@@ -21,12 +21,13 @@ export default function Logo({ className = "", width = 80, height = 80 }: { clas
     }
   }, []);
 
+  const src = isRave ? '/8logo_rave.svg' : noText ? '/8logo_notext.svg' : '/8logo.svg';
   return (
-    <img 
-      src={isRave ? "/8logo_rave.svg" : "/8logo.svg"} 
-      alt="8wut Logo" 
-      className={className} 
-      style={{ width: `${width}px`, height: `${height}px`, objectFit: 'contain' }} 
+    <img
+      src={src}
+      alt="8wut Logo"
+      className={className}
+      style={{ width: `${width}px`, height: `${height}px`, objectFit: 'contain' }}
     />
   );
 }
