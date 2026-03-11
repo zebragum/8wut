@@ -137,6 +137,26 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
       }
     }
     await client.query('COMMIT');
+
+    // Detect @mentions and send notifications
+    if (caption) {
+      const mentionedUsernames = [...new Set((caption.match(/@([A-Za-z0-9_-]+)/g) || []).map((m: string) => m.slice(1)))];
+      for (const username of mentionedUsernames) {
+        try {
+          const { rows: [mentioned] } = await pool.query(
+            'SELECT id FROM users WHERE lower(username) = lower($1)', [username]
+          );
+          if (mentioned && mentioned.id !== req.userId) {
+            await pool.query(
+              `INSERT INTO notifications (recipient_id, actor_id, type, post_id)
+               VALUES ($1, $2, 'mention', $3) ON CONFLICT DO NOTHING`,
+              [mentioned.id, req.userId, post.id]
+            );
+          }
+        } catch { /* non-critical — don't fail the post */ }
+      }
+    }
+
     const enriched = await fetchPost(post.id, req.userId!);
     res.status(201).json(enriched);
   } catch (err) {

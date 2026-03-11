@@ -178,7 +178,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
             <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
               {user.topics.slice(0, 2).map((topic, i) => (
                 <span key={i} style={{ 
-                  background: 'white', color: 'var(--color-skyblue)', border: '1px solid var(--color-skyblue)',
+                  background: 'var(--color-skyblue)', color: 'white', border: 'none',
                   padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' 
                 }}>
                   {topic}
@@ -237,7 +237,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
             ) : (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
                 {(user.topics || []).map(topic => (
-                  <div key={topic} style={{ display: 'flex', alignItems: 'center', background: 'white', color: 'var(--color-skyblue)', border: '1px solid var(--color-skyblue)', padding: '6px 12px', borderRadius: '8px', fontSize: '0.95rem' }}>
+                  <div key={topic} style={{ display: 'flex', alignItems: 'center', background: 'var(--color-skyblue)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.95rem' }}>
                     {topic}
                     {editingTopics && (
                       <button onClick={() => handleRemoveTopic(topic)} style={{ background: 'none', border: 'none', color: '#ff4444', marginLeft: '8px', cursor: 'pointer', fontSize: '1.1rem', padding: 0, display: 'flex', alignItems: 'center' }}>×</button>

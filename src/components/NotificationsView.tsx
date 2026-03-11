@@ -7,7 +7,8 @@ const TYPE_TEXT: Record<string, string> = {
   like: 'liked your post',
   comment: 'commented on your post',
   follow: 'started following you',
-  fridge: 'saved your post to their fridge'
+  fridge: 'saved your post to their fridge',
+  mention: "@'d you in a post"
 };
 
 export default function NotificationsView() {

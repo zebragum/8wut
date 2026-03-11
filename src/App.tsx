@@ -18,15 +18,28 @@ function AppShell() {
   const [globalTheme, setGlobalTheme] = useState(localStorage.getItem('8wut-theme') || 'theme-grass');
 
   useEffect(() => {
-    const handleNavigate = (e: Event) => {
+    const handleNavigate = async (e: Event) => {
       const customEvent = e as CustomEvent;
       if (typeof customEvent.detail === 'string') {
         setCurrentView(customEvent.detail);
         if (customEvent.detail === 'profile') setCurrentProfileId(null);
       } else if (typeof customEvent.detail === 'object' && customEvent.detail !== null) {
         setCurrentView(customEvent.detail.view);
-        if (customEvent.detail.view === 'profile' && customEvent.detail.userId) {
-          setCurrentProfileId(customEvent.detail.userId);
+        if (customEvent.detail.view === 'profile') {
+          if (customEvent.detail.userId) {
+            setCurrentProfileId(customEvent.detail.userId);
+          } else if (customEvent.detail.username) {
+            // @mention click — resolve username to userId via API
+            try {
+              const apiClient = (await import('./api/client')).default;
+              const res = await apiClient.get(`/users/by-username/${encodeURIComponent(customEvent.detail.username)}`);
+              setCurrentProfileId(res.data.id);
+            } catch {
+              setCurrentProfileId(null);
+            }
+          } else {
+            setCurrentProfileId(null);
+          }
         }
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });

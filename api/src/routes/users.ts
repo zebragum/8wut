@@ -4,6 +4,21 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+// GET /users/by-username/:username - resolve @mention to profile
+router.get('/by-username/:username', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows: [user] } = await pool.query(
+      'SELECT id, username, avatar_url, bio, topics, created_at FROM users WHERE lower(username) = lower($1)',
+      [req.params.username]
+    );
+    if (!user) { res.status(404).json({ error: 'User not found' }); return; }
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // GET /users/:id
 router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
@@ -43,6 +58,11 @@ router.patch('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   let idx = 1;
 
   if (username?.trim()) {
+    // No spaces allowed in usernames
+    if (/\s/.test(username.trim())) {
+      res.status(400).json({ error: 'Username cannot contain spaces' });
+      return;
+    }
     // Check uniqueness
     const { rows: [existing] } = await pool.query(
       'SELECT id FROM users WHERE lower(username) = lower($1) AND id != $2',

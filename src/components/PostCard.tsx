@@ -4,6 +4,7 @@ import { likePost, unlikePost, saveToFridge, removeFromFridge, updatePost, delet
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
 import CommentSheet from './CommentSheet';
+import { parseMentions } from '../utils/parseMentions';
 
 type PostCardProps = {
   post: ApiPost;
@@ -275,7 +276,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
                   {post.author.username}
                 </span>
                 {' '}
-                <span className="caption-text" style={{ marginLeft: '6px' }}>{post.caption}</span>
+                <span className="caption-text" style={{ marginLeft: '6px' }}>{parseMentions(post.caption)}</span>
               </div>
               <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '2px' }}>
                 {new Date(post.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}

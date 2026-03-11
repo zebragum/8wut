@@ -16,6 +16,10 @@ router.post('/register', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'username, password, and inviteCode are required' });
     return;
   }
+  if (/\s/.test(username.trim())) {
+    res.status(400).json({ error: 'Username cannot contain spaces' });
+    return;
+  }
 
   const client = await pool.connect();
   try {
