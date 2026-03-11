@@ -4,6 +4,7 @@ import getCroppedImg from '../utils/cropImage';
 import { createPost } from '../api/posts';
 import { uploadImage } from '../api/users';
 import toast from 'react-hot-toast';
+import { createPortal } from 'react-dom';
 
 type ColorPreset = 'transparent' | 'skyblue' | 'lavender' | 'orange';
 
@@ -244,7 +245,7 @@ export default function CreatePost() {
               />
             </div>
 
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '32px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: '120px' }}>
               {/* BIG Central Camera Button */}
               <button
                 className="btn-camera"
@@ -252,7 +253,7 @@ export default function CreatePost() {
                   width: '100px', height: '100px', borderRadius: '50%',
                   background: 'var(--color-lavender)',
                   border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative',
                   cursor: 'pointer',
                   boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
                   transition: 'transform 0.2s',
@@ -261,42 +262,44 @@ export default function CreatePost() {
                 onClick={() => fileRef.current?.click()}
                 disabled={uploading}
               >
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="#388e3c">
-                  <circle cx="12" cy="12" r="3.2"/>
-                  <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
-                </svg>
+                <div style={{ width: 100, height: 100, position: 'relative' }}>
+                  <img src="/8logo.svg" alt="Camera" style={{ position: 'absolute', width: 100, height: 200, left: 0, top: -100, objectFit: 'cover' }} />
+                </div>
               </button>
             </div>
             
             <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleFileChange} />
 
-            {/* Fixed Share Button Centered Bottom */}
-            <button
-              onClick={handleShare}
-              disabled={submitting}
-              style={{
-                position: 'fixed',
-                bottom: 'max(env(safe-area-inset-bottom, 12px), 16px)',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 1001,
-                width: '50px', height: '50px',
-                background: 'var(--color-orange)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: 'none', borderRadius: '50%', cursor: submitting ? 'wait' : 'pointer',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                transition: 'transform 0.2s',
-                opacity: submitting ? 0.7 : 1
-              }}
-            >
-              {submitting ? (
-                <div style={{ width: '24px', height: '24px', border: '3px solid #388e3c', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              ) : (
-                <svg width="26" height="26" viewBox="0 0 24 24" fill={hasImages ? "red" : "#388e3c"} className={hasImages ? "rainbow-strobe-filter" : ""} style={{ marginLeft: '4px' }}>
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                </svg>
-              )}
-            </button>
+            {/* Fixed Share Button Centered Bottom, Portaled to escape transform traps */}
+            {createPortal(
+              <button
+                onClick={handleShare}
+                disabled={submitting}
+                style={{
+                  position: 'fixed',
+                  bottom: 'calc(max(env(safe-area-inset-bottom, 12px), 16px) + 0px)', // + 0px so it perfectly overlays the 50x50 button spot in BottomNav (whose bottom padding pushes items up exactly this much)
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 9999,
+                  width: '50px', height: '50px',
+                  background: 'var(--color-orange)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: 'none', borderRadius: '50%', cursor: submitting ? 'wait' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                  transition: 'transform 0.2s',
+                  opacity: submitting ? 0.7 : 1
+                }}
+              >
+                {submitting ? (
+                  <div style={{ width: '24px', height: '24px', border: '3px solid #388e3c', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                ) : (
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill={hasImages ? "red" : "#388e3c"} className={hasImages ? "rainbow-strobe-filter" : ""} style={{ marginLeft: '4px' }}>
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                  </svg>
+                )}
+              </button>,
+              document.body
+            )}
           </>
         )}
       </div>
