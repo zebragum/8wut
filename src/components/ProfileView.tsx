@@ -299,64 +299,27 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
               <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📷</div>
               <p>No posts yet</p>
             </div>
-          ) : viewMode === 'grid' ? (
-            <div className="profile-grid-clean">
-              {posts.map((post) => (
-                <div 
-                  key={post.id} 
-                  className="grid-cell" 
-                  onClick={() => setViewMode('journal')} 
-                  style={{ 
-                    cursor: 'pointer',
-                    background: post.text_background || 'rgba(255,255,255,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '8px',
-                    textAlign: 'center',
-                    overflow: 'hidden',
-                    position: 'relative'
-                  }}
-                >
-                  {post.images && post.images.length > 0 ? (
-                    <img src={post.images[0]} alt="Post" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <span style={{ 
-                      fontSize: '0.75rem', 
-                      color: 'white', 
-                      fontWeight: '700',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 4,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden'
-                    }}>
-                      {post.caption}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="feed-posts" style={{ padding: '0 8px' }}>
-              {(() => {
-                const groups: { [key: string]: ApiPost[] } = {};
-                posts.forEach(post => {
-                  const dateObj = new Date(post.created_at);
-                  const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long' }) + ', ' + 
-                                  dateObj.toLocaleDateString('en-US', { month: 'short' }) + '. ' + 
-                                  dateObj.getDate() + ', ' + dateObj.getFullYear();
-                  if (!groups[dateStr]) groups[dateStr] = [];
-                  groups[dateStr].push(post);
-                });
+          ) : (() => {
+            // Both grid and journal share the same date-grouping logic
+            const dateGroups: { [key: string]: ApiPost[] } = {};
+            posts.forEach(post => {
+              const dateObj = new Date(post.created_at);
+              const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long' }) + ', ' + 
+                              dateObj.toLocaleDateString('en-US', { month: 'short' }) + '. ' + 
+                              dateObj.getDate() + ', ' + dateObj.getFullYear();
+              if (!dateGroups[dateStr]) dateGroups[dateStr] = [];
+              dateGroups[dateStr].push(post);
+            });
+            const colors = ['var(--color-skyblue)', 'var(--color-orange)', 'var(--color-lavender)'];
 
-                return Object.entries(groups).map(([date, groupPosts], index) => {
-                  const colors = ['var(--color-skyblue)', 'var(--color-orange)', 'var(--color-lavender)'];
+            return (
+              <div className="feed-posts" style={{ padding: '0 8px' }}>
+                {Object.entries(dateGroups).map(([date, groupPosts], index) => {
                   const barColor = colors[index % 3];
-
                   return (
-                    <div key={date} className="date-group" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '16px' }}>
+                    <div key={date} className="date-group" style={{ width: '100%', display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
                       <div className="date-separator" style={{ 
-                        margin: '16px 0 -8px 0', 
+                        margin: '16px 0 10px 0', 
                         padding: '12px 16px', 
                         background: barColor, 
                         color: 'white', 
@@ -370,15 +333,39 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
                       }}>
                         {date}
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2px', width: '100%', marginTop: '10px' }}>
-                        {groupPosts.map(post => <PostCard key={post.id} post={post} />)}
-                      </div>
+                      {viewMode === 'grid' ? (
+                        <div className="profile-grid-clean" style={{ gap: '2px' }}>
+                          {groupPosts.map(post => (
+                            <div 
+                              key={post.id} 
+                              className="grid-cell" 
+                              onClick={() => setViewMode('journal')} 
+                              style={{ 
+                                cursor: 'pointer',
+                                background: post.text_background || 'rgba(255,255,255,0.1)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                padding: '8px', textAlign: 'center', overflow: 'hidden', position: 'relative'
+                              }}
+                            >
+                              {post.images && post.images.length > 0 ? (
+                                <img src={post.images[0]} alt="Post" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <span style={{ fontSize: '0.75rem', color: 'white', fontWeight: '700', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {post.caption}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        groupPosts.map(post => <PostCard key={post.id} post={post} />)
+                      )}
                     </div>
                   );
-                });
-              })()}
-            </div>
-          )}
+                })}
+              </div>
+            );
+          })()}
         </>
       )}
 

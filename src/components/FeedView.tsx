@@ -15,6 +15,7 @@ export default function FeedView({ filter }: FeedViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [scope, setScope] = useState<'everyone' | 'friends' | 'groups'>('everyone');
   const [viewMode, setViewMode] = useState<'grid' | 'card'>('card');
+  const [focusedPost, setFocusedPost] = useState<ApiPost | null>(null);
 
   const loadPosts = useCallback(async () => {
     if (!currentUser) return;
@@ -160,43 +161,61 @@ export default function FeedView({ filter }: FeedViewProps) {
           )}
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="profile-grid-clean" style={{ padding: '0 8px', gridTemplateColumns: 'repeat(2, 1fr)' }}>
-          {posts.map(post => (
-            <div 
-              key={post.id} 
-              className="grid-cell" 
-              onClick={() => setViewMode('card')} 
-              style={{ 
-                cursor: 'pointer',
-                background: post.text_background || 'rgba(255,255,255,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px',
-                textAlign: 'center',
-                overflow: 'hidden',
-                position: 'relative',
-                borderRadius: '8px'
+        focusedPost ? (
+          <div style={{ padding: '0 8px' }}>
+            <button 
+              onClick={() => setFocusedPost(null)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white',
+                padding: '8px 14px', borderRadius: '20px', cursor: 'pointer',
+                fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 'bold',
+                marginBottom: '12px'
               }}
             >
-              {post.images && post.images.length > 0 ? (
-                <img src={post.images[0]} alt="Post" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <span style={{ 
-                  fontSize: '0.7rem', 
-                  color: 'white', 
-                  fontWeight: '700',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
-                }}>
-                  {post.caption}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+              ← Back to grid
+            </button>
+            <PostCard post={focusedPost} onDeleted={handlePostDeleted} onUpdated={handlePostUpdated} />
+          </div>
+        ) : (
+          <div className="profile-grid-clean" style={{ padding: '0 8px', gridTemplateColumns: 'repeat(2, 1fr)' }}>
+            {posts.map(post => (
+              <div 
+                key={post.id} 
+                className="grid-cell" 
+                onClick={() => setFocusedPost(post)} 
+                style={{ 
+                  cursor: 'pointer',
+                  background: post.text_background || 'rgba(255,255,255,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '8px',
+                  textAlign: 'center',
+                  overflow: 'hidden',
+                  position: 'relative',
+                  borderRadius: '8px'
+                }}
+              >
+                {post.images && post.images.length > 0 ? (
+                  <img src={post.images[0]} alt="Post" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ 
+                    fontSize: '0.7rem', 
+                    color: 'white', 
+                    fontWeight: '700',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}>
+                    {post.caption}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )
       ) : (
         <div className="feed-posts" style={{ padding: '0 8px' }}>
           {posts.map(post => (
