@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { sendPushNotification } from '../utils/push';
 
 const router = Router();
 
@@ -19,6 +20,14 @@ router.post('/:id/follow', requireAuth, async (req: AuthRequest, res: Response) 
       `INSERT INTO notifications (recipient_id, actor_id, type) VALUES ($1, $2, 'follow')`,
       [req.params.id, req.userId]
     );
+    // PUSH
+    const { rows: [actor] } = await pool.query('SELECT username FROM users WHERE id = $1', [req.userId]);
+    await sendPushNotification(req.params.id, {
+      title: '8wut',
+      body: `${actor.username} followed you`,
+      icon: '/icon-192.png',
+      data: { url: `/profile/${actor.username}` }
+    });
     res.json({ isFollowing: true });
   } catch (err) {
     console.error(err);

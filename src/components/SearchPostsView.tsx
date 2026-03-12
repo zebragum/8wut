@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import type { ApiPost } from '../api/posts';
+import { searchPosts } from '../api/posts';
 import PostCard from './PostCard';
 import toast from 'react-hot-toast';
 
@@ -22,18 +23,11 @@ export default function SearchPostsView() {
     setLoading(true);
     setHasSearched(true);
     try {
-      // Inline fetch to avoid circular deps or needing to export a new function from api/posts right now
-      const token = localStorage.getItem('8wut_token');
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/posts/search?q=${encodeURIComponent(searchQuery)}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!res.ok) throw new Error('Search failed');
-      const data = await res.json();
+      const data = await searchPosts(searchQuery);
       setPosts(data);
-    } catch (err) {
-      toast.error('Search failed');
+    } catch (err: any) {
+      const msg = err.response?.data?.error || err.response?.data?.details || 'Search failed';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -61,7 +55,7 @@ export default function SearchPostsView() {
     <div className="search-posts-view" style={{ padding: '0 0 100px 0', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
       
       {/* Search Input Header */}
-      <div style={{ padding: '16px', position: 'sticky', top: '0', zIndex: 50, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+      <div style={{ padding: '16px', position: 'sticky', top: '130px', zIndex: 50 }}>
         <input 
           type="text" 
           value={query}

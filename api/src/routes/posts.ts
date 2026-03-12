@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { sendPushNotification } from '../utils/push';
 
 const router = Router();
 
@@ -80,25 +81,35 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
 // GET /posts/search?q=query
 router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
   const query = req.query.q as string;
-  if (!query) {
+  if (!query || !query.trim()) {
     res.json([]);
     return;
   }
   
+  const keywords = query.trim().split(/\s+/).filter(Boolean);
+  const conditions: string[] = [];
+  const params: string[] = [];
+
+  keywords.forEach((word, i) => {
+    conditions.push(`(p.caption ILIKE $${i + 1} OR u.username ILIKE $${i + 1})`);
+    params.push(`%${word}%`);
+  });
+
   try {
     const { rows } = await pool.query(
-      `SELECT id FROM posts 
-       WHERE scope = 'everyone' 
-       AND caption ILIKE $1 
-       ORDER BY created_at DESC 
+      `SELECT p.id FROM posts p
+       JOIN users u ON u.id = p.author_id
+       WHERE p.scope = 'everyone' 
+       AND (${conditions.join(' AND ')})
+       ORDER BY p.created_at DESC 
        LIMIT 50`,
-      [`%${query}%`]
+      params
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));
   } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error', details: err.message });
+    console.error('Search Error:', err);
+    res.status(500).json({ error: 'Search failed', details: err.message });
   }
 });
 
@@ -157,6 +168,14 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
                VALUES ($1, $2, 'mention', $3) ON CONFLICT DO NOTHING`,
               [mentioned.id, req.userId, post.id]
             );
+            // PUSH
+            const { rows: [actor] } = await pool.query('SELECT username FROM users WHERE id = $1', [req.userId]);
+            await sendPushNotification(mentioned.id, {
+              title: '8wut',
+              body: `${actor.username} @'d you in a post`,
+              icon: '/icon-192.png',
+              data: { url: `/post/${post.id}` }
+            });
           }
         } catch { /* non-critical — don't fail the post */ }
       }

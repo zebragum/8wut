@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../AuthContext';
 import Logo from './Logo';
 import toast from 'react-hot-toast';
+import { usePushNotifications } from '../utils/usePushNotifications';
 
 interface TopBarProps {
   currentView: string;
@@ -19,6 +20,7 @@ export default function TopBar({ currentView }: TopBarProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newUsername, setNewUsername] = useState('');
+  const { isSupported, subscription, subscribe, unsubscribe } = usePushNotifications();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -69,7 +71,7 @@ export default function TopBar({ currentView }: TopBarProps) {
   else if (currentView === 'eat') currentTitle = 'Fridge';
   else if (currentView === 'profile') currentTitle = 'Profile';
   else if (currentView === 'notifications') currentTitle = 'Notifications';
-  else if (currentView === 'create') currentTitle = 'New Post';
+  else if (currentView === 'create') currentTitle = 'wut u 8';
   else if (currentView === 'admin') currentTitle = 'Admin';
 
   const showTitle = true;
@@ -81,11 +83,11 @@ export default function TopBar({ currentView }: TopBarProps) {
         onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'feed' }))}
         style={{ padding: '33px 0 0 0', marginLeft: '-17px' }}
       >
-        <Logo width="94" height="94" className="top-logo" />
+        <Logo width="94" height="94" className="top-logo" hideText={true} transparent={true} />
       </div>
 
       {showTitle && (
-        <h2 style={{ margin: 0, marginTop: '4px', fontFamily: '"Outfit", sans-serif', fontSize: '1.5rem', fontWeight: 'bold', color: 'white', textShadow: '1px 1px 2px rgba(0,0,0,0.5)', position: 'absolute', top: '16px', left: '50%', transform: 'translateX(-50%)' }}>
+        <h2 style={{ margin: 0, marginTop: '4px', fontFamily: "'Cooper Black', 'Fredoka One', cursive", fontSize: '1.5rem', fontWeight: 'bold', color: 'white', textShadow: '1px 1px 2px rgba(0,0,0,0.5)', position: 'absolute', top: '16px', left: '50%', transform: 'translateX(-50%)' }}>
           {currentTitle}
         </h2>
       )}
@@ -140,6 +142,26 @@ export default function TopBar({ currentView }: TopBarProps) {
           <div className="settings-overlay" style={{ background: 'var(--color-skyblue)', padding: '24px', borderRadius: '16px', maxWidth: '400px', width: '100%', maxHeight: '80vh', overflowY: 'auto', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative' }} onClick={e => e.stopPropagation()}>
             <button onClick={() => setShowSettings(false)} style={{ position: 'absolute', top: '16px', left: '16px', background: 'transparent', border: 'none', color: 'white', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer', lineHeight: 1 }}>×</button>
             <h2 style={{ marginTop: 0, color: 'white' }}>Settings</h2>
+
+            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px' }}>
+              <h3 style={{ margin: '0 0 8px 0', color: 'white', fontSize: '1.1rem' }}>Notifications</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', margin: 0 }}>Push notifications</p>
+                {isSupported && (
+                  <button 
+                    onClick={subscription ? unsubscribe : subscribe}
+                    style={{ 
+                      padding: '6px 12px', borderRadius: '16px', border: 'none', 
+                      background: subscription ? 'rgba(255,255,255,0.2)' : 'var(--color-orange)',
+                      color: 'white', fontWeight: 'bold', fontSize: '0.85rem', cursor: 'pointer'
+                    }}
+                  >
+                    {subscription ? 'Enabled' : 'Disabled'}
+                  </button>
+                )}
+                {!isSupported && <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', margin: 0 }}>Not supported</p>}
+              </div>
+            </div>
 
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px' }}>
               <h3 style={{ margin: '0 0 8px 0', color: 'white', fontSize: '1.1rem' }}>Privacy & Safety</h3>

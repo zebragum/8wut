@@ -5,6 +5,7 @@ export interface ApiUser {
   username: string;
   avatar_url: string;
   bio: string;
+  bio_color?: string;
   is_admin: boolean;
   created_at: string;
   followers_count?: number;

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { sendPushNotification } from '../utils/push';
 
 const router = Router();
 
@@ -19,6 +20,14 @@ router.post('/:id/like', requireAuth, async (req: AuthRequest, res: Response) =>
          VALUES ($1, $2, 'like', $3) ON CONFLICT DO NOTHING`,
         [post.author_id, req.userId, req.params.id]
       );
+      // PUSH
+      const { rows: [actor] } = await pool.query('SELECT username FROM users WHERE id = $1', [req.userId]);
+      await sendPushNotification(post.author_id, {
+        title: '8wut',
+        body: `${actor.username} liked wut u 8`,
+        icon: '/icon-192.png',
+        data: { url: `/post/${req.params.id}` }
+      });
     }
     const { rows: [{ count }] } = await pool.query(
       'SELECT COUNT(*) FROM likes WHERE post_id = $1', [req.params.id]

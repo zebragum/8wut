@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Fredoka+One&display=swap');
+@import url('https://fonts.cdnfonts.com/css/cooper-black');
+/* Cooper Black imported from stable CDNfonts */
 
 :root {
   --color-skyblue: #4fc3f7;
@@ -36,19 +38,39 @@ body {
 }
 
 /* Global Theme Classes */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-image 0.3s ease;
+  pointer-events: none;
+}
+
 .theme-grass {
   background-color: #388e3c;
-  background-image: url("/realistic_grass.png");
-  background-size: cover;
-  background-attachment: fixed;
 }
+.theme-grass::before {
+  background-image: url("/realistic_grass.png");
+}
+
 .theme-black {
   background-color: #000;
 }
+
 .theme-stars {
   background-color: #000;
+}
+.theme-stars::before {
   background-image: url("/stars.gif");
   background-repeat: repeat;
+  background-size: auto;
 }
 
 /* Glassmorphism reset for Stars theme only */
@@ -318,9 +340,10 @@ h1, h2, h3, h4, h5, p {
 
 .profile-header-card {
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  padding: 8px 20px 8px 20px;
+  align-items: center; /* Center vertically */
+  gap: 1.5rem;
+  padding: 16px 20px;
+  width: 100%;
 }
 
 .profile-avatar {
@@ -335,14 +358,16 @@ h1, h2, h3, h4, h5, p {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  align-items: center !important;
 }
 
 .profile-name {
-  font-size: 1.25rem;
+  font-size: 2.2rem; /* Larger like target image */
   font-weight: 700;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.1;
+  font-family: 'Cooper Black', 'Fredoka One', cursive; /* Match logo/premium feel */
 }
 
 .profile-handle {
@@ -356,15 +381,24 @@ h1, h2, h3, h4, h5, p {
   font-size: 1.15rem;
   font-weight: 600;
   margin-bottom: 4px;
+  display: flex;
+  flex-direction: column; /* Stack stats vertically */
+  gap: 4px; /* Slightly tighter gap for vertical rows */
+  justify-content: center;
+  align-items: center; /* Center each row */
 }
-.profile-stats-row span {
-  margin-right: 0.75rem;
+.profile-stats-row span.label {
+  margin-left: 0.25rem; /* Small space after count */
+  font-weight: 400;
+  color: rgba(255,255,255,0.7);
 }
-.profile-stats-row .count {
+.profile-stats-row span.count {
   font-weight: 700;
+  margin-right: 4px;
 }
 .profile-stats-row .label {
   font-weight: 400;
+  opacity: 0.9;
 }
 
 .profile-location {
@@ -409,6 +443,7 @@ h1, h2, h3, h4, h5, p {
 .tab.active {
   border-bottom: 3px solid #9b72cf; /* match lavender */
   padding-bottom: 4px;
+}
  /* ------------------------------------- */
 /*  App Specific Component Styles        */
 /* ------------------------------------- */
@@ -465,9 +500,9 @@ h1, h2, h3, h4, h5, p {
   gap: 16px;
 }
 .action-btn-inline {
-  background: transparent;
-  border: none;
-  color: white;
+  background: transparent !important;
+  border: none !important;
+  color: white !important;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -486,6 +521,92 @@ h1, h2, h3, h4, h5, p {
   font-size: 0.95rem;
   font-weight: 600;
   font-family: 'Outfit', sans-serif;
+}
+
+/* Bio Colors */
+.bio-container-orange {
+  background: var(--color-orange) !important;
+  color: white !important;
+  padding: 16px 24px;
+  border-radius: 16px;
+  margin: 16px auto;
+  width: calc(100% - 32px);
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.bio-container-skyblue {
+  background: var(--color-skyblue) !important;
+  color: white !important;
+  padding: 16px 24px;
+  border-radius: 16px;
+  margin: 16px auto;
+  width: calc(100% - 32px);
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: block !important;
+  position: relative;
+}
+
+.bio-container-lavender {
+  background: var(--color-lavender) !important;
+  color: white !important;
+  padding: 16px 24px;
+  border-radius: 16px;
+  margin: 16px auto;
+  width: calc(100% - 32px);
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: block !important;
+  position: relative;
+}
+
+.bio-text-white {
+  color: white;
+  line-height: 1.4;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.edit-link-white {
+  background: none !important;
+  border: none !important;
+  color: rgba(255,255,255,0.7) !important;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s ease;
+}
+
+.edit-link-white:hover {
+  color: white;
+}
+
+.bio-edit-link {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  background: none !important;
+  border: none !important;
+  color: rgba(255,255,255,0.6) !important;
+  font-size: 0.8rem !important;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+  font-family: inherit;
+  transition: color 0.2s ease;
+}
+
+.bio-edit-link:hover {
+  color: white !important;
 }
 
 /* 2-Column Feed Grid Framework */
@@ -566,8 +687,6 @@ h1, h2, h3, h4, h5, p {
   align-items: center;
   justify-content: center;
   padding: 0 8px;
-}
-  margin-bottom: -10px; /* pull down to border */
 }
 
 /* Dynamic Backgrounds for Text Posts */

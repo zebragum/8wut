@@ -1,0 +1,16 @@
+1 | "8logo.svg" | 259194 bytes
+1 | "avatar_zach.jpg" | 2264502 bytes
+2 | ".well-known" | 4096 bytes
+1 | "index.html" | 1071 bytes
+1 | "stars.gif" | 7123 bytes
+1 | "8logo_notext.svg" | 259439 bytes
+1 | "realistic_grass.png" | 1075763 bytes
+1 | "vite.svg" | 1497 bytes
+1 | "apple-touch-icon.png" | 9530 bytes
+2 | "assets" | 4096 bytes
+1 | "monotile.jpg" | 3579737 bytes
+1 | "8logo_rave.svg" | 259194 bytes
+1 | "icon-192.png" | 10505 bytes
+1 | "manifest.json" | 612 bytes
+1 | ".htaccess" | 532 bytes
+1 | "icon-512.png" | 41214 bytes

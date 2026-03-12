@@ -172,16 +172,24 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
         </div>
 
         {/* Actions */}
-        <div className="post-actions-bar" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 4px 12px', width: '100%' }}>
-          <div className="action-left-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px' }}>
-            <button className="action-btn-inline" onClick={() => setShowComments(true)}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="post-actions-bar" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px 4px 14px', width: '100%', background: 'transparent' }}>
+          <div className="action-left-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px', background: 'transparent' }}>
+            <button 
+              className="action-btn-inline" 
+              onClick={() => setShowComments(true)}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', outline: 'none' }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '22px', height: '22px' }}>
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
-              {post.commentsCount > 0 && <span className="action-count">{post.commentsCount}</span>}
+              {post.commentsCount > 0 && <span className="action-count" style={{ fontSize: '0.9rem', fontWeight: 600 }}>{post.commentsCount}</span>}
             </button>
 
-            <button className="action-btn-inline" onClick={handleLike}>
+            <button 
+              className="action-btn-inline" 
+              onClick={handleLike}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', outline: 'none' }}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -189,26 +197,31 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
                 stroke={post.hasLiked ? "var(--color-orange)" : "currentColor"}
                 strokeWidth="2"
                 className={showHeartAnim ? "heart-animated" : ""}
+                style={{ width: '22px', height: '22px' }}
               >
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
-              {post.likes > 0 && <span className="action-count">{post.likes > 999 ? '1k+' : post.likes}</span>}
+              {post.likes > 0 && <span className="action-count" style={{ fontSize: '0.9rem', fontWeight: 600 }}>{post.likes > 999 ? '1k+' : post.likes}</span>}
             </button>
 
-            <button className={`action-btn-inline ${post.savedToFridge ? 'saved' : ''}`} onClick={handleSave}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={post.savedToFridge ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: post.savedToFridge ? 'var(--color-skyblue)' : 'inherit' }}>
+            <button 
+              className={`action-btn-inline ${post.savedToFridge ? 'saved' : ''}`} 
+              onClick={handleSave}
+              style={{ background: 'none', border: 'none', padding: 0, color: 'white', display: 'flex', alignItems: 'center', cursor: 'pointer', outline: 'none' }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={post.savedToFridge ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: post.savedToFridge ? 'var(--color-skyblue)' : 'inherit' }}>
                 <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
                 <line x1="4" y1="9" x2="20" y2="9" />
                 <line x1="8" y1="4" x2="8" y2="7" />
-                <line x1="8" y1="11" x2="8" y2="15" />
+                <line x1="8" y1="11" x2="8" y2="20" />
               </svg>
             </button>
           </div>
 
           {isOwner && !isEditing && (
             <button
-              className="action-btn-inline"
-              style={{ marginLeft: 'auto', opacity: 0.7, fontSize: '0.9rem', fontWeight: 600 }}
+              className="edit-link-white"
+              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'white', opacity: 0.8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', padding: '4px 8px' }}
               onClick={() => setIsEditing(true)}
             >
               Edit

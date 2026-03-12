@@ -27,9 +27,13 @@ export default function FeedView({ filter }: FeedViewProps) {
         data = await getUserFridgePosts(currentUser.id);
       } else {
         if (scope === 'everyone') {
-          data = await getDiscoveryFeed();
+          const discoveryPosts = await getDiscoveryFeed();
+          // Filter: Everyone feed only shows posts with 'everyone' scope
+          data = discoveryPosts.filter(p => p.scope === 'everyone');
         } else if (scope === 'friends') {
-          data = await getFeed();
+          const feedPosts = await getFeed();
+          // Filter: Friends feed shows posts from followed users, but excludes 'private' scope
+          data = feedPosts.filter(p => p.scope !== 'private');
         }
       }
       setPosts(data);

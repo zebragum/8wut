@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 async function deploy() {
-    const client = new ftp.Client();
+    const client = new ftp.Client(60000); // 60s timeout
     client.ftp.verbose = true;
     try {
         await client.access({

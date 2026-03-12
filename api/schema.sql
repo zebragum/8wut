@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   avatar_url  TEXT DEFAULT 'https://i.pravatar.cc/150?u=' || gen_random_uuid(),
   bio         TEXT DEFAULT '',
+  bio_color   TEXT DEFAULT 'orange',
   is_admin    BOOLEAN DEFAULT FALSE,
   invite_code_used TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW()
@@ -85,6 +86,14 @@ CREATE TABLE IF NOT EXISTS notifications (
   post_id       UUID REFERENCES posts(id) ON DELETE CASCADE,
   read          BOOLEAN DEFAULT FALSE,
   created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Push subscriptions
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subscription JSONB NOT NULL,
+  created_at   TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, subscription)
 );
 
 -- Indexes for common queries

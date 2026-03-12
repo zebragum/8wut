@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { sendPushNotification } from '../utils/push';
 
 const router = Router();
 
@@ -50,6 +51,49 @@ router.get('/unread-count', requireAuth, async (req: AuthRequest, res: Response)
       [req.userId]
     );
     res.json({ count: parseInt(count) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /notifications/subscribe
+router.post('/subscribe', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { subscription } = req.body;
+    if (!subscription) return res.status(400).json({ error: 'Subscription required' });
+
+    // Upsert subscription
+    await pool.query(
+      `INSERT INTO push_subscriptions (user_id, subscription) 
+       VALUES ($1, $2) 
+       ON CONFLICT (user_id, subscription) DO NOTHING`,
+      [req.userId, JSON.stringify(subscription)]
+    );
+
+    // Send a confirmation push
+    await sendPushNotification(req.userId || '', {
+      title: 'Notifications Enabled!',
+      body: 'You will now receive alerts for likes, comments, and follows.',
+      icon: '/icon-192.png'
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /notifications/unsubscribe
+router.post('/unsubscribe', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { subscription } = req.body;
+    await pool.query(
+      'DELETE FROM push_subscriptions WHERE user_id = $1 AND subscription = $2',
+      [req.userId, JSON.stringify(subscription)]
+    );
+    res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

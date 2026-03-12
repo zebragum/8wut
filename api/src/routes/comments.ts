@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import pool from '../db';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { sendPushNotification } from '../utils/push';
 
 const router = Router();
 
@@ -52,6 +53,13 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res: Response
         `INSERT INTO notifications (recipient_id, actor_id, type, post_id) VALUES ($1, $2, 'comment', $3)`,
         [post.author_id, req.userId, req.params.id]
       );
+      // PUSH
+      await sendPushNotification(post.author_id, {
+        title: '8wut',
+        body: `${user.username} commented on wut u 8`,
+        icon: '/icon-192.png',
+        data: { url: `/post/${req.params.id}` }
+      });
     }
     res.status(201).json({
       id: comment.id,

@@ -13,7 +13,7 @@ export interface ApiPost {
   caption: string;
   textBackground?: string;
   text_background?: string;
-  scope?: string;
+  scope?: 'everyone' | 'friends' | 'private';
   created_at: string;
   author: { id: string; username: string; avatarUrl: string };
   images: string[];
@@ -48,7 +48,7 @@ export async function createPost(payload: {
   caption: string;
   textBackground?: string;
   images?: string[];
-  scope?: 'everyone' | 'friends';
+  scope?: 'everyone' | 'friends' | 'private';
   created_at?: string;
 }): Promise<ApiPost> {
   const { data } = await apiClient.post<ApiPost>('/posts', payload);
@@ -100,5 +100,10 @@ export async function deleteComment(postId: string, commentId: string): Promise<
 
 export async function heartComment(postId: string, commentId: string): Promise<{ isHearted: boolean }> {
   const { data } = await apiClient.patch<{ isHearted: boolean }>(`/posts/${postId}/comments/${commentId}/heart`);
+  return data;
+}
+
+export async function searchPosts(query: string): Promise<ApiPost[]> {
+  const { data } = await apiClient.get<ApiPost[]>(`/posts/search?q=${encodeURIComponent(query)}`);
   return data;
 }
