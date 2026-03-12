@@ -3,7 +3,6 @@ export type User = {
   username: string;
   avatarUrl: string;
   isFollowing: boolean;
-  groups?: string[];
 };
 
 export type Comment = {
@@ -29,7 +28,7 @@ export type Post = {
 };
 
 export const MOCK_USERS: User[] = [
-  { id: '1', username: 'Zach', avatarUrl: '/avatar_zach.jpg', isFollowing: true, groups: ['cooking aficionados', 'organic foods', 'personal trainers', 'gluten free (mostly)', 'bikers/cyclists', 'food journalers', 'primal', 'bodybuilders & fitness competitors'] },
+  { id: '1', username: 'Zach', avatarUrl: '/avatar_zach.jpg', isFollowing: true },
   { id: '2', username: 'chef.steve', avatarUrl: 'https://i.pravatar.cc/150?img=11', isFollowing: false },
   { id: '3', username: 'late_night_bites', avatarUrl: 'https://i.pravatar.cc/150?img=32', isFollowing: true },
 ];

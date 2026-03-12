@@ -11,6 +11,7 @@
   --color-surface-elevated: rgba(0, 0, 0, 0.5);
   --color-text: #ffffff;
   --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --overlay-bg: rgba(0, 0, 0, 0.4);
   
   --border-radius-lg: 1.5rem;
   --border-radius-md: 1rem;
@@ -66,6 +67,13 @@ body {
 /* Force text to be black in Party mode — but not inside the settings modal */
 .theme-party, .theme-party *:not(.settings-overlay):not(.settings-overlay *) {
   color: #000 !important;
+}
+.theme-party {
+  --overlay-bg: rgba(255, 255, 255, 0.7);
+}
+.theme-party .feed-image-author-overlay,
+.theme-party .post-images-container > div:first-child {
+  background: rgba(255, 255, 255, 0.7) !important;
 }
 /* Settings modal always keeps its own text colors */
 .settings-overlay, .settings-overlay * {
@@ -263,6 +271,10 @@ h1, h2, h3, h4, h5, p {
   padding-bottom: 110px; /* Space for the persistent bottom nav */
   background-color: transparent;
 }
+.delete-btn {
+  background-color: var(--color-orange) !important;
+  color: white !important;
+}
 .main-content.create-mode {
   padding-bottom: 74px;
   overflow-y: hidden;
@@ -369,9 +381,9 @@ h1, h2, h3, h4, h5, p {
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  align-self: flex-start;
+  align-self: center;
   margin-top: 0.2rem;
-  margin-left: -12px;
+  margin-left: 0;
   white-space: nowrap; /* Prevent text wrapping */
 }
 
@@ -437,6 +449,45 @@ h1, h2, h3, h4, h5, p {
   display: block;
 }
 
+/* PostCard Actions Row */
+.post-actions-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 4px 12px;
+  width: 100%;
+}
+.action-left-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+.action-btn-inline {
+  background: transparent;
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.action-btn-inline:active {
+  transform: scale(0.9);
+}
+.action-btn-inline svg {
+  width: 24px;
+  height: 24px;
+}
+.action-count {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif;
+}
+
 /* 2-Column Feed Grid Framework */
 .feed-view-grid {
   display: grid;
@@ -476,7 +527,7 @@ h1, h2, h3, h4, h5, p {
 .author-name {
   font-size: 0.9rem;
   font-weight: 500;
-  color: white;
+  color: white; /* Will be overridden to black by .theme-party */
 }
 
 /* Special Pink Text Tile */
@@ -625,11 +676,6 @@ h1, h2, h3, h4, h5, p {
   align-items: center;
   padding: 8px 12px;
 }
-.action-left-group {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
 .action-btn-inline {
   display: flex;
   align-items: center;
@@ -659,37 +705,6 @@ h1, h2, h3, h4, h5, p {
   margin-top: 4px;
 }
 
-/* Profile Topic Pills */
-.topic-pills-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 0 4px;
-}
-.topic-pill {
-  border: 1.5px solid var(--color-skyblue);
-  color: white;
-  background: var(--color-skyblue);
-  padding: 6px 14px;
-  border-radius: 6px; /* Boxy like reference, slightly rounded corners */
-  font-size: 0.95rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.add-topic-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 12px 0 0 0;
-  text-align: right;
-  width: 100%;
-  display: block;
-}
 
 .post-images-container {
   width: 100%;

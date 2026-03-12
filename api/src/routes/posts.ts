@@ -11,6 +11,7 @@ async function fetchPost(postId: string, viewerId: string) {
        p.id, p.caption, p.text_background, p.scope, p.created_at,
        u.id AS author_id, u.username AS author_username, u.avatar_url AS author_avatar,
        (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
+       EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = p.author_id) AS is_following,
        EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $2) AS has_liked,
        EXISTS(SELECT 1 FROM fridge_saves WHERE post_id = p.id AND user_id = $2) AS saved_to_fridge,
        (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comments_count,
@@ -38,7 +39,8 @@ async function fetchPost(postId: string, viewerId: string) {
     hasLiked: post.has_liked,
     savedToFridge: post.saved_to_fridge,
     commentsCount: parseInt(post.comments_count),
-    heartedComments: post.hearted_comments || []
+    heartedComments: post.hearted_comments || [],
+    _isFollowing: post.is_following // Internal use for permission checks
   };
 }
 
@@ -48,35 +50,10 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
     const { rows } = await pool.query(
       `SELECT p.id FROM posts p
        WHERE p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
+       AND p.scope != 'private'
        ORDER BY p.created_at DESC
        LIMIT 50`,
       [req.userId]
-    );
-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
-    res.json(posts.filter(Boolean));
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error', details: err.message });
-  }
-});
-
-// GET /posts/groups - posts from groups you are in
-router.get('/groups', requireAuth, async (req: AuthRequest, res: Response) => {
-  try {
-    const { rows: [currentUser] } = await pool.query('SELECT topics FROM users WHERE id = $1', [req.userId]);
-    const userTopics = currentUser?.topics || [];
-
-    if (!userTopics || userTopics.length === 0) {
-      return res.json([]);
-    }
-
-    const { rows } = await pool.query(
-      `SELECT p.id FROM posts p
-       JOIN users u ON u.id = p.author_id
-       WHERE p.scope = 'groups' AND u.topics && $1
-       ORDER BY p.created_at DESC
-       LIMIT 50`,
-      [userTopics]
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));
@@ -100,6 +77,31 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
   }
 });
 
+// GET /posts/search?q=query
+router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
+  const query = req.query.q as string;
+  if (!query) {
+    res.json([]);
+    return;
+  }
+  
+  try {
+    const { rows } = await pool.query(
+      `SELECT id FROM posts 
+       WHERE scope = 'everyone' 
+       AND caption ILIKE $1 
+       ORDER BY created_at DESC 
+       LIMIT 50`,
+      [`%${query}%`]
+    );
+    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+    res.json(posts.filter(Boolean));
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error', details: err.message });
+  }
+});
+
 // GET /posts/:id
 router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
   const post = await fetchPost(req.params.id as string, req.userId!);
@@ -107,15 +109,18 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
     res.status(404).json({ error: 'Post not found' });
     return;
   }
-  res.json(post);
+  
+  // No friend restriction block needed. If it's private, they just had to navigate to the profile to click it.  
+  // Strip the internal tracking prop before sending
+  const { _isFollowing, ...cleanPost } = post;
+  res.json(cleanPost);
 });
 
 // POST /posts - create a post
 router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   const { caption, textBackground, images, scope, created_at } = req.body;
   let postScope = 'everyone';
-  if (scope === 'friends') postScope = 'friends';
-  if (scope === 'groups') postScope = 'groups';
+  if (scope === 'private') postScope = 'private';
 
   if (!images?.length && !textBackground) {
     res.status(400).json({ error: 'Post must have images or a text background' });
@@ -214,7 +219,19 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
       [req.params.userId as string]
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
-    res.json(posts.filter(Boolean));
+    
+    // Filter posts: if it's scoped to friends, only the author or a follower can see it
+    const visiblePosts = posts.filter(Boolean).filter(p => {
+      if (p!.scope === 'friends') {
+        return p!.author.id === req.userId || p!._isFollowing;
+      }
+      return true;
+    }).map(p => {
+      const { _isFollowing, ...cleanPost } = p!;
+      return cleanPost;
+    });
+
+    res.json(visiblePosts);
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: 'Server error', details: err.message });

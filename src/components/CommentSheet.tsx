@@ -22,12 +22,6 @@ export default function CommentSheet({ postId, onClose, onCommentAdded }: Commen
     getComments(postId)
       .then(fetchedComments => {
         setComments(fetchedComments);
-        // We need to know if the current user is the post author to show hearts.
-        // Easiest is to pass it in via props or fetch the post. Let's do a quick fetch
-        // or just assume if they don't have permission the API will reject it anyway. But 
-        // passing it in via props is cleaner. Let's just default to true if the API allows it,
-        // or we'll pass it in. For now, we'll try to fetch post details.
-        import('../api/posts').then(m => m.getFeed() /* fallback, ideally we have a getPost */).catch();
       })
       .catch(() => toast.error('Could not load comments'))
       .finally(() => setLoading(false));

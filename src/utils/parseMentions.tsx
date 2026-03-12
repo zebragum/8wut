@@ -17,7 +17,8 @@ export function parseMentions(text: string): React.ReactNode[] {
       return (
         <span
           key={i}
-          style={{ fontWeight: 'bold', cursor: 'pointer', color: 'var(--color-skyblue)' }}
+          role="button"
+          style={{ fontWeight: 'bold', cursor: 'pointer', color: 'var(--color-skyblue)', userSelect: 'none' }}
           onClick={e => {
             e.stopPropagation();
             window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', username } }));

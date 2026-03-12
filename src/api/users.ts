@@ -15,7 +15,7 @@ export async function getUser(userId: string): Promise<ApiUser> {
   return data;
 }
 
-export async function updateMe(updates: { username?: string; bio?: string; avatarUrl?: string; topics?: string[] }): Promise<ApiUser> {
+export async function updateMe(updates: { username?: string; bio?: string; avatarUrl?: string }): Promise<ApiUser> {
   const { data } = await apiClient.patch<ApiUser>('/users/me', updates);
   return data;
 }

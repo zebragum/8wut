@@ -17,15 +17,13 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
   const [fridgePosts, setFridgePosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'journal'>('grid');
-  const [activeTab, setActiveTab] = useState<'posts' | 'overview' | 'fridge'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'fridge'>('posts');
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [newBio, setNewBio] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
-  const [editingTopics, setEditingTopics] = useState(false);
-  const [topicInput, setTopicInput] = useState('');
   const [focusedPost, setFocusedPost] = useState<ApiPost | null>(null);
 
   const load = useCallback(async () => {
@@ -90,36 +88,6 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
     }
   };
 
-  const handleAddTopic = async () => {
-    if (!topicInput.trim() || !user) return;
-    const currentTopics = user.topics || [];
-    if (currentTopics.includes(topicInput.trim().toLowerCase())) {
-      setTopicInput('');
-      return;
-    }
-    const newTopics = [...currentTopics, topicInput.trim().toLowerCase()];
-    try {
-      const { updateMe } = await import('../api/users');
-      await updateMe({ topics: newTopics });
-      setUser(prev => prev ? { ...prev, topics: newTopics } : prev);
-      setTopicInput('');
-    } catch {
-      toast.error('Could not add topic');
-    }
-  };
-
-  const handleRemoveTopic = async (topicToRemove: string) => {
-    if (!user) return;
-    const newTopics = (user.topics || []).filter(t => t !== topicToRemove);
-    try {
-      const { updateMe } = await import('../api/users');
-      await updateMe({ topics: newTopics });
-      setUser(prev => prev ? { ...prev, topics: newTopics } : prev);
-    } catch {
-      toast.error('Could not remove topic');
-    }
-  };
-
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -173,28 +141,25 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
             <div><span className="count">{user.following_count || 0}</span><span className="label"> following</span></div>
             <div><span className="count">{user.followers_count || 0}</span><span className="label"> followers</span></div>
           </div>
-
-          {user.topics && user.topics.length > 0 && (
-            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
-              {user.topics.slice(0, 2).map((topic, i) => (
-                <span key={i} style={{ 
-                  background: 'var(--color-skyblue)', color: 'white', border: 'none',
-                  padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' 
-                }}>
-                  {topic}
-                </span>
-              ))}
+          
+          {user.bio && !editingProfile && (
+            <div style={{ marginBottom: '16px', maxWidth: '80%', padding: '0 12px', margin: '0 auto 16px auto' }}>
+              <p style={{ lineHeight: 1.4, fontSize: '0.95rem', margin: 0, fontStyle: 'italic', opacity: 0.9 }}>
+                "{user.bio}"
+              </p>
             </div>
           )}
 
           {isOwnProfile ? (
-            <button
-              className="edit-profile-btn"
-              onClick={() => { setEditingProfile(true); setNewUsername(user.username); setNewBio(user.bio || ''); }}
-              style={{ margin: '0 auto' }}
-            >
-              edit profile
-            </button>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <button
+                className="edit-profile-btn"
+                onClick={() => { setEditingProfile(true); setNewUsername(user.username); setNewBio(user.bio || ''); }}
+                style={{ margin: '0' }}
+              >
+                edit profile
+              </button>
+            </div>
           ) : (
             <button
               onClick={handleFollow}
@@ -214,70 +179,8 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
       {/* Tabs */}
       <div className="profile-tabs">
         <button className={`tab ${activeTab === 'posts' ? 'active' : ''}`} onClick={() => setActiveTab('posts')}>POSTS ({posts.length})</button>
-        <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>OVERVIEW</button>
         <button className={`tab ${activeTab === 'fridge' ? 'active' : ''}`} onClick={() => setActiveTab('fridge')}>FRIDGE ({fridgePosts.length})</button>
       </div>
-
-      {/* Overview tab */}
-      {activeTab === 'overview' && (
-        <div style={{ padding: '1rem', color: 'white' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', textTransform: 'uppercase' }}>Bio</h3>
-          <div style={{ background: 'var(--color-orange)', padding: '12px', borderRadius: '8px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
-            <p style={{ lineHeight: 1.5, fontSize: '1.1rem', margin: 0 }}>
-              {user.bio || 'No bio yet.'}
-            </p>
-          </div>
-
-          <h3 style={{ marginTop: 0, marginBottom: '8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', textTransform: 'uppercase' }}>Groups</h3>
-          <div style={{ padding: '0 0 24px 0' }}>
-            {(!user.topics || user.topics.length === 0) && !editingTopics ? (
-              <div style={{ border: '2px dashed rgba(255,255,255,0.3)', padding: '24px', borderRadius: '8px', textAlign: 'center' }}>
-                <p style={{ margin: 0, opacity: 0.7, fontWeight: 500 }}>You haven't added any topics yet.</p>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-                {(user.topics || []).map(topic => (
-                  <div key={topic} style={{ display: 'flex', alignItems: 'center', background: 'var(--color-skyblue)', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.95rem' }}>
-                    {topic}
-                    {editingTopics && (
-                      <button onClick={() => handleRemoveTopic(topic)} style={{ background: 'none', border: 'none', color: '#ff4444', marginLeft: '8px', cursor: 'pointer', fontSize: '1.1rem', padding: 0, display: 'flex', alignItems: 'center' }}>×</button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {editingTopics && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                <input 
-                  type="text" 
-                  value={topicInput} 
-                  onChange={e => setTopicInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleAddTopic()}
-                  placeholder="e.g. food journalers"
-                  style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: 'none', fontFamily: 'inherit' }}
-                />
-                <button onClick={handleAddTopic} style={{ background: 'var(--color-skyblue)', border: 'none', color: 'white', borderRadius: '8px', padding: '0 16px', fontWeight: 'bold', cursor: 'pointer' }}>Add</button>
-              </div>
-            )}
-            
-            {isOwnProfile && (
-              <div style={{ textAlign: 'right', marginTop: '8px' }}>
-                <button 
-                  onClick={() => setEditingTopics(!editingTopics)} 
-                  style={{ background: 'none', border: 'none', color: 'white', opacity: 0.8, fontWeight: 'bold', fontSize: '0.9rem', cursor: 'pointer', padding: 0 }}
-                >
-                  {editingTopics ? 'done <<' : 'add/edit topics >>'}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <p style={{ textAlign: 'center', opacity: 0.6, fontSize: '0.9rem' }}>
-            Member since {new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          </p>
-        </div>
-      )}
 
       {/* Posts tab */}
       {activeTab === 'posts' && (
@@ -380,6 +283,61 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
         </>
       )}
 
+      {/* Edit Profile Modal */}
+      {editingProfile && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--color-skyblue)', padding: '24px', borderRadius: '16px', maxWidth: '400px', width: '100%' }}>
+            <h2 style={{ marginTop: 0, color: 'white' }}>Edit Profile</h2>
+            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ color: 'white', display: 'block', marginBottom: '8px' }}>Username</label>
+                <input 
+                  type="text" 
+                  value={newUsername} 
+                  onChange={e => setNewUsername(e.target.value)} 
+                  style={{
+                    padding: '12px', borderRadius: '8px', border: 'none', width: '100%', 
+                    fontFamily: 'inherit', fontSize: '1rem', background: 'rgba(255,255,255,0.2)', color: 'white'
+                  }} 
+                />
+              </div>
+
+              <div>
+                <label style={{ color: 'white', display: 'block', marginBottom: '8px' }}>Bio</label>
+                <textarea 
+                  value={newBio} 
+                  onChange={e => setNewBio(e.target.value)} 
+                  style={{
+                    padding: '12px', borderRadius: '8px', border: 'none', width: '100%', 
+                    fontFamily: 'inherit', fontSize: '1rem', background: 'rgba(255,255,255,0.2)', color: 'white',
+                    minHeight: '80px', resize: 'vertical'
+                  }} 
+                  placeholder="Tell us about yourself..."
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setEditingProfile(false)} 
+                  style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.3)', background: 'transparent', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={savingProfile}
+                  style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: 'var(--color-orange)', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  {savingProfile ? '...' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+
       {/* Fridge tab */}
       {activeTab === 'fridge' && (
         <div className="feed-posts" style={{ padding: '0 8px' }}>
@@ -426,6 +384,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
                 style={{ padding: '12px', borderRadius: '8px', border: 'none', fontFamily: 'inherit', fontSize: '1rem', resize: 'vertical' }}
               />
             </div>
+
             <div style={{ display: 'flex', gap: '8px' }}>
               <button type="button" onClick={() => setEditingProfile(false)}
                 style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'transparent', border: '1px solid white', color: 'white', fontFamily: 'inherit', cursor: 'pointer' }}>

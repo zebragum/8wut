@@ -8,7 +8,7 @@ const router = Router();
 router.get('/by-username/:username', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { rows: [user] } = await pool.query(
-      'SELECT id, username, avatar_url, bio, topics, created_at FROM users WHERE lower(username) = lower($1)',
+      'SELECT id, username, avatar_url, bio, created_at FROM users WHERE lower(username) = lower($1)',
       [req.params.username]
     );
     if (!user) { res.status(404).json({ error: 'User not found' }); return; }
@@ -19,13 +19,14 @@ router.get('/by-username/:username', requireAuth, async (req: AuthRequest, res: 
   }
 });
 
+
 // GET /users/:id
 router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const targetUserId = req.params.id as string;
     const { rows: [user] } = await pool.query(
       `SELECT
-         u.id, u.username, u.avatar_url, u.bio, u.topics, u.is_admin, u.created_at,
+         u.id, u.username, u.avatar_url, u.bio, u.is_admin, u.created_at,
          (SELECT COUNT(*) FROM follows WHERE following_id = u.id) AS followers_count,
          (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) AS following_count,
          (SELECT COUNT(*) FROM posts WHERE author_id = u.id) AS post_count,
@@ -52,7 +53,7 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
 
 // PATCH /users/me - update own profile
 router.patch('/me', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { username, bio, avatarUrl, topics } = req.body;
+  const { username, bio, avatarUrl } = req.body;
   const updates: string[] = [];
   const values: any[] = [];
   let idx = 1;
@@ -77,7 +78,6 @@ router.patch('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   }
   if (bio !== undefined) { updates.push(`bio = $${idx++}`); values.push(bio); }
   if (avatarUrl?.trim()) { updates.push(`avatar_url = $${idx++}`); values.push(avatarUrl.trim()); }
-  if (topics && Array.isArray(topics)) { updates.push(`topics = $${idx++}`); values.push(topics); }
 
   if (!updates.length) {
     res.status(400).json({ error: 'Nothing to update' });
@@ -88,7 +88,7 @@ router.patch('/me', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { rows: [user] } = await pool.query(
       `UPDATE users SET ${updates.join(', ')} WHERE id = $${idx}
-       RETURNING id, username, avatar_url, bio, topics, is_admin, created_at`,
+       RETURNING id, username, avatar_url, bio, is_admin, created_at`,
       values
     );
     res.json(user);

@@ -13,7 +13,7 @@ export default function FeedView({ filter }: FeedViewProps) {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [scope, setScope] = useState<'everyone' | 'friends' | 'groups'>('everyone');
+  const [scope, setScope] = useState<'everyone' | 'friends'>('everyone');
   const [viewMode, setViewMode] = useState<'grid' | 'card'>('card');
   const [focusedPost, setFocusedPost] = useState<ApiPost | null>(null);
 
@@ -22,7 +22,7 @@ export default function FeedView({ filter }: FeedViewProps) {
     setLoading(true);
     setError(null);
     try {
-      let data: ApiPost[];
+      let data: ApiPost[] = [];
       if (filter === 'fridge') {
         data = await getUserFridgePosts(currentUser.id);
       } else {
@@ -30,9 +30,6 @@ export default function FeedView({ filter }: FeedViewProps) {
           data = await getDiscoveryFeed();
         } else if (scope === 'friends') {
           data = await getFeed();
-        } else {
-          const { getGroupsFeed } = await import('../api/posts');
-          data = await getGroupsFeed();
         }
       }
       setPosts(data);
@@ -109,16 +106,6 @@ export default function FeedView({ filter }: FeedViewProps) {
               }}
             >
               Friends
-            </button>
-            <button 
-              onClick={() => setScope('groups')}
-              style={{ 
-                padding: '6px 20px', borderRadius: '16px', border: 'none', 
-                background: scope === 'groups' ? 'var(--color-orange)' : 'transparent',
-                color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem'
-              }}
-            >
-              Groups
             </button>
           </div>
 
@@ -213,10 +200,12 @@ export default function FeedView({ filter }: FeedViewProps) {
                   </span>
                 )}
                 {/* Username overlay */}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 6px 4px', background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <img src={post.author.avatarUrl} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.author.username}</span>
-                </div>
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '16px 6px 4px', background: 'linear-gradient(transparent, var(--overlay-bg))', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <img src={post.author.avatarUrl} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {post.author.username}
+                    </span>
+                  </div>
               </div>
             ))}
           </div>

@@ -15,7 +15,7 @@ async function deploy() {
         });
 
         console.log("🚀 Connected to Bluehost!");
-        await client.cd("/");
+        await client.cd("/website_f4ed6cb8");
         
         // 1. CLEAR EVERYTHING
         console.log("🧹 Clearing remote directory...");
@@ -46,13 +46,13 @@ async function deploy() {
             }
         }
 
-        await uploadDir(distPath, "/");
+        await uploadDir(distPath, "/website_f4ed6cb8");
 
         // 3. UPLOAD .htaccess from public (just in case dist didn't have it)
         const htaccessPath = path.resolve("public/.htaccess");
         if (fs.existsSync(htaccessPath)) {
             console.log("📤 Uploading .htaccess explicitly...");
-            await client.uploadFrom(htaccessPath, "/.htaccess");
+            await client.uploadFrom(htaccessPath, "/website_f4ed6cb8/.htaccess");
         }
 
         console.log("✅ Deployment successful! Site should be fixed.");

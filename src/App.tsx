@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import BottomNav from './components/BottomNav';
 import TopBar from './components/TopBar';
 import FeedView from './components/FeedView';
@@ -8,6 +8,7 @@ import CreatePost from './components/CreatePost';
 import NotificationsView from './components/NotificationsView';
 import AuthView from './components/AuthView';
 import AdminView from './components/AdminView';
+import SearchPostsView from './components/SearchPostsView';
 import { AuthProvider, useAuth } from './AuthContext';
 import './index.css';
 
@@ -24,22 +25,26 @@ function AppShell() {
         setCurrentView(customEvent.detail);
         if (customEvent.detail === 'profile') setCurrentProfileId(null);
       } else if (typeof customEvent.detail === 'object' && customEvent.detail !== null) {
-        setCurrentView(customEvent.detail.view);
         if (customEvent.detail.view === 'profile') {
           if (customEvent.detail.userId) {
             setCurrentProfileId(customEvent.detail.userId);
+            setCurrentView('profile');
           } else if (customEvent.detail.username) {
             // @mention click — resolve username to userId via API
             try {
               const apiClient = (await import('./api/client')).default;
               const res = await apiClient.get(`/users/by-username/${encodeURIComponent(customEvent.detail.username)}`);
               setCurrentProfileId(res.data.id);
+              setCurrentView('profile'); // Only switch view AFTER resolving ID
             } catch {
-              setCurrentProfileId(null);
+              toast.error('Could not find user');
             }
           } else {
             setCurrentProfileId(null);
+            setCurrentView('profile');
           }
+        } else {
+          setCurrentView(customEvent.detail.view);
         }
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -98,6 +103,7 @@ function AppShell() {
         {currentView === 'notifications' && <NotificationsView />}
         {currentView === 'profile' && <ProfileView userId={currentProfileId} />}
         {currentView === 'admin' && currentUser.is_admin && <AdminView />}
+        {currentView === 'search' && <SearchPostsView />}
       </main>
       <BottomNav currentView={currentView} onViewChange={setCurrentView} />
     </div>

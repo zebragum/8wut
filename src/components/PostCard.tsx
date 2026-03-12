@@ -108,7 +108,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
           <div style={{
             position: 'absolute', top: '12px', left: '12px', zIndex: 10,
             display: 'flex', alignItems: 'center', gap: '8px',
-            background: 'rgba(0,0,0,0.4)', padding: '4px 10px 4px 4px',
+            background: 'var(--overlay-bg)', padding: '4px 10px 4px 4px',
             borderRadius: '24px', backdropFilter: 'blur(4px)'
           }}>
             <img
@@ -120,7 +120,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
             />
             <span
               className="username font-bold"
-              style={{ color: 'white', textShadow: '0 1px 3px rgba(0,0,0,0.8)', cursor: 'pointer' }}
+              style={{ color: 'inherit', textShadow: '0 1px 3px rgba(0,0,0,0.3)', cursor: 'pointer' }}
               onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: post.author.id } }))}
             >
               {post.author.username}
@@ -157,7 +157,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
               style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
               onDoubleClick={handleLike}
             >
-              <h2 className="text-post-content font-bold" style={{ textAlign: 'center', margin: 0, textShadow: '1px 1px 3px rgba(0,0,0,0.6)' }}>
+              <h2 className="text-post-content font-bold" style={{ textAlign: 'center', margin: 0, textShadow: '1px 1px 3px rgba(0,0,0,0.6)', whiteSpace: 'pre-wrap' }}>
                 {post.caption}
               </h2>
             </div>
@@ -226,7 +226,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
                 style={{
                   width: '100%', background: 'rgba(255,255,255,0.1)',
                   border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px',
-                  padding: '8px', color: 'white', fontFamily: 'inherit',
+                  padding: '8px', color: 'inherit', fontFamily: 'inherit',
                   fontSize: '1rem', minHeight: '60px'
                 }}
               />
@@ -237,21 +237,24 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
                 style={{
                   width: '100%', background: 'rgba(255,255,255,0.1)',
                   border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px',
-                  padding: '8px', color: 'white', fontFamily: 'inherit',
+                  padding: '8px', color: 'inherit', fontFamily: 'inherit',
                   fontSize: '0.9rem'
                 }}
               />
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center' }}>
+
+
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
                 <button
                   onClick={handleDelete}
-                  style={{ padding: '6px 12px', borderRadius: '6px', background: 'rgba(220,38,38,0.8)', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit' }}
+                  className="delete-btn"
+                  style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit' }}
                 >
                   Delete
                 </button>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     onClick={() => { setEditCaption(post.caption); setIsEditing(false); }}
-                    style={{ padding: '6px 12px', borderRadius: '6px', background: 'transparent', border: '1px solid rgba(255,255,255,0.5)', color: 'white', cursor: 'pointer', fontFamily: 'inherit' }}
+                    style={{ padding: '6px 12px', borderRadius: '6px', background: 'transparent', border: '1px solid rgba(255,255,255,0.3)', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
                     Cancel
                   </button>
@@ -267,18 +270,20 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
             </div>
           ) : (
             <div className="caption-inline-header">
-              <div>
-                <span
-                  className="username font-bold"
-                  onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: post.author.id } }))}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {post.author.username}
-                </span>
-                {' '}
-                <span className="caption-text" style={{ marginLeft: '6px' }}>{parseMentions(post.caption)}</span>
-              </div>
-              <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '2px' }}>
+              {post.images && post.images.length > 0 && (
+                <div>
+                  <span
+                    className="username font-bold"
+                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: post.author.id } }))}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {post.author.username}
+                  </span>
+                  {' '}
+                  <span className="caption-text" style={{ marginLeft: '6px', whiteSpace: 'pre-wrap', color: 'inherit' }}>{parseMentions(post.caption)}</span>
+                </div>
+              )}
+              <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '2px', color: 'inherit' }}>
                 {new Date(post.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
               </div>
             </div>
@@ -297,12 +302,12 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
                   />
                   <div style={{ flex: 1, fontSize: '0.9rem', lineHeight: '1.2' }}>
                     <span 
-                      style={{ fontWeight: 600, color: 'white', cursor: 'pointer', marginRight: '4px' }}
+                      style={{ fontWeight: 600, color: 'inherit', cursor: 'pointer', marginRight: '4px' }}
                       onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: hc.author.id } }))}
                     >
                       {hc.author.username}
                     </span>
-                    <span style={{ color: 'rgba(255,255,255,0.85)' }}>{hc.text}</span>
+                    <span style={{ color: 'inherit', opacity: 0.85 }}>{hc.text}</span>
                   </div>
                 </div>
               ))}

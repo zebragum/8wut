@@ -16,7 +16,7 @@ router.post('/:id/follow', requireAuth, async (req: AuthRequest, res: Response) 
       [req.userId, req.params.id]
     );
     await pool.query(
-      `INSERT INTO notifications (recipient_id, actor_id, type) VALUES ($1, $2, 'followed you')`,
+      `INSERT INTO notifications (recipient_id, actor_id, type) VALUES ($1, $2, 'follow')`,
       [req.params.id, req.userId]
     );
     res.json({ isFollowing: true });

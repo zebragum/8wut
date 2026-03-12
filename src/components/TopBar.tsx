@@ -81,7 +81,7 @@ export default function TopBar({ currentView }: TopBarProps) {
         onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'feed' }))}
         style={{ padding: '33px 0 0 0', marginLeft: '-17px' }}
       >
-        <Logo width="94" height="94" className="top-logo" noText={true} />
+        <Logo width="94" height="94" className="top-logo" />
       </div>
 
       {showTitle && (
@@ -124,8 +124,9 @@ export default function TopBar({ currentView }: TopBarProps) {
             zIndex: 100, overflow: 'hidden'
           }}>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications' })); }}>Notifications</button>
+            <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'search' })); }}>Search Posts</button>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); setShowSettings(true); }}>Settings</button>
-            {currentUser?.username === 'Zach' && (
+            {currentUser?.is_admin && (
               <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'admin' })); }}>Admin Panel</button>
             )}
             <button className="dropdown-item" onClick={() => { setShowMenu(false); window.open(`mailto:zthammond@gmail.com?subject=8wut SUPPORT (${Math.floor(Math.random() * 100000)})`); }}>Help/Support</button>
