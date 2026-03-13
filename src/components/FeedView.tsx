@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getFeed, getDiscoveryFeed, getUserFridgePosts } from '../api/posts';
+import { getDiscoveryFeed, getUserFridgePosts } from '../api/posts';
 import type { ApiPost } from '../api/posts';
 import PostCard from './PostCard';
 import { useAuth } from '../AuthContext';
@@ -13,7 +13,7 @@ export default function FeedView({ filter }: FeedViewProps) {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [scope, setScope] = useState<'everyone'>('everyone');
+
   const [viewMode, setViewMode] = useState<'grid' | 'card'>('card');
   const [focusedPost, setFocusedPost] = useState<ApiPost | null>(null);
 
@@ -26,7 +26,7 @@ export default function FeedView({ filter }: FeedViewProps) {
       if (filter === 'fridge') {
         data = await getUserFridgePosts(currentUser.id);
       } else {
-        if (scope === 'everyone') {
+        if (true) { // Defaulting strictly to everyone discovery feed
           const discoveryPosts = await getDiscoveryFeed();
           // Filter: Everyone feed only shows posts with 'everyone' scope
           data = discoveryPosts.filter(p => p.scope === 'everyone');
@@ -38,7 +38,7 @@ export default function FeedView({ filter }: FeedViewProps) {
     } finally {
       setLoading(false);
     }
-  }, [filter, currentUser, scope]);
+  }, [filter, currentUser]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
