@@ -55,8 +55,8 @@ export async function createPost(payload: {
   return data;
 }
 
-export async function updatePost(id: string, caption: string, created_at?: string): Promise<ApiPost> {
-  const { data } = await apiClient.patch<ApiPost>(`/posts/${id}`, { caption, created_at });
+export async function updatePost(id: string, caption: string, created_at?: string, scope?: string): Promise<ApiPost> {
+  const { data } = await apiClient.patch<ApiPost>(`/posts/${id}`, { caption, created_at, scope });
   return data;
 }
 

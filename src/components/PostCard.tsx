@@ -22,6 +22,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
   const [editCreatedAt, setEditCreatedAt] = useState(
     new Date(new Date(post.created_at).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
   );
+  const [editScope, setEditScope] = useState(post.scope || 'everyone');
   const [showComments, setShowComments] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -63,7 +64,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
     if (saving) return;
     setSaving(true);
     try {
-      const updated = await updatePost(post.id, editCaption, new Date(editCreatedAt).toISOString());
+      const updated = await updatePost(post.id, editCaption, new Date(editCreatedAt).toISOString(), editScope);
       setPost(updated);
       onUpdated?.(updated);
       setIsEditing(false);
@@ -254,7 +255,19 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
                   fontSize: '0.9rem'
                 }}
               />
-
+              <select
+                value={editScope}
+                onChange={e => setEditScope(e.target.value as any)}
+                style={{
+                  width: '100%', background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px',
+                  padding: '8px', color: 'white', fontFamily: 'inherit',
+                  fontSize: '0.9rem'
+                }}
+              >
+                <option value="everyone" style={{ color: 'black' }}>Everyone</option>
+                <option value="private" style={{ color: 'black' }}>Private</option>
+              </select>
 
               <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
                 <button

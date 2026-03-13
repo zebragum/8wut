@@ -239,11 +239,11 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
 
 // PATCH /posts/:id - edit caption
 router.patch('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
-  const { caption, created_at } = req.body;
+  const { caption, created_at, scope } = req.body;
   try {
     const { rows: [post] } = await pool.query(
-      'UPDATE posts SET caption = $1, created_at = COALESCE($4, created_at) WHERE id = $2 AND author_id = $3 RETURNING id',
-      [caption, req.params.id as string, req.userId, created_at ? new Date(created_at).toISOString() : null]
+      'UPDATE posts SET caption = $1, created_at = COALESCE($4, created_at), scope = COALESCE($5, scope) WHERE id = $2 AND author_id = $3 RETURNING id',
+      [caption, req.params.id as string, req.userId, created_at ? new Date(created_at).toISOString() : null, scope || null]
     );
     if (!post) {
       res.status(404).json({ error: 'Post not found or not yours' });
