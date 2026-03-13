@@ -304,7 +304,13 @@ export default function CreatePost() {
                     <button 
                       key={s}
                       type="button"
-                      onClick={() => setScope(s)}
+                      onClick={() => {
+                        setScope(s);
+                        if (s === 'private' && localStorage.getItem('8wut_seenPrivateTutorial') !== 'true') {
+                          alert('Private posts only show on your profile');
+                          localStorage.setItem('8wut_seenPrivateTutorial', 'true');
+                        }
+                      }}
                       style={{ 
                         padding: '4px 16px', borderRadius: '14px', border: 'none', 
                         background: scope === s ? 'var(--color-orange)' : 'transparent',

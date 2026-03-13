@@ -257,7 +257,14 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
               />
               <select
                 value={editScope}
-                onChange={e => setEditScope(e.target.value as any)}
+                onChange={e => {
+                  const val = e.target.value as any;
+                  setEditScope(val);
+                  if (val === 'private' && localStorage.getItem('8wut_seenPrivateTutorial') !== 'true') {
+                    alert('Private posts only show on your profile');
+                    localStorage.setItem('8wut_seenPrivateTutorial', 'true');
+                  }
+                }}
                 style={{
                   width: '100%', background: 'rgba(255,255,255,0.1)',
                   border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px',
