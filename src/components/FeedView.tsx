@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getDiscoveryFeed, getUserFridgePosts } from '../api/posts';
 import type { ApiPost } from '../api/posts';
 import PostCard from './PostCard';
@@ -17,6 +17,11 @@ export default function FeedView({ filter }: FeedViewProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'card'>('card');
   const [focusedPost, setFocusedPost] = useState<ApiPost | null>(null);
 
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const observerTarget = useRef<HTMLDivElement>(null);
+
   const loadPosts = useCallback(async () => {
     if (!currentUser) return;
     setLoading(true);
@@ -25,14 +30,14 @@ export default function FeedView({ filter }: FeedViewProps) {
       let data: ApiPost[] = [];
       if (filter === 'fridge') {
         data = await getUserFridgePosts(currentUser.id);
+        setHasMore(false);
       } else {
-        if (true) { // Defaulting strictly to everyone discovery feed
-          const discoveryPosts = await getDiscoveryFeed();
-          // Filter: Everyone feed only shows posts with 'everyone' scope
-          data = discoveryPosts.filter(p => p.scope === 'everyone');
-        }
+        const discoveryPosts = await getDiscoveryFeed(5, 0);
+        data = discoveryPosts.filter(p => p.scope === 'everyone');
+        setHasMore(discoveryPosts.length === 5);
       }
       setPosts(data);
+      setPage(0);
     } catch {
       setError('Could not load posts. Check your connection.');
     } finally {
@@ -41,6 +46,45 @@ export default function FeedView({ filter }: FeedViewProps) {
   }, [filter, currentUser]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
+
+  const loadMore = useCallback(async () => {
+    if (!currentUser || loadingMore || !hasMore || filter === 'fridge') return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const offset = nextPage * 5;
+      const discoveryPosts = await getDiscoveryFeed(5, offset);
+      const data = discoveryPosts.filter(p => p.scope === 'everyone');
+      setPosts(prev => {
+        const existingIds = new Set(prev.map(p => p.id));
+        const newUnique = data.filter(p => !existingIds.has(p.id));
+        return [...prev, ...newUnique];
+      });
+      setPage(nextPage);
+      setHasMore(discoveryPosts.length === 5);
+    } catch {
+      console.error('Could not load more posts');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [currentUser, loadingMore, hasMore, filter, page]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && !loadingMore && hasMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadMore, loadingMore, hasMore]);
 
   const handlePostDeleted = (postId: string) => {
     setPosts(prev => prev.filter(p => p.id !== postId));
@@ -193,6 +237,13 @@ export default function FeedView({ filter }: FeedViewProps) {
           {posts.map(post => (
             <PostCard key={post.id} post={post} onDeleted={handlePostDeleted} onUpdated={handlePostUpdated} />
           ))}
+        </div>
+      )}
+      
+      {/* Infinite Scroll Observer Target */}
+      {!loading && hasMore && filter !== 'fridge' && posts.length > 0 && (
+        <div ref={observerTarget} style={{ height: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '20px 0' }}>
+          {loadingMore && <div style={{ width: '24px', height: '24px', border: '3px solid var(--color-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
         </div>
       )}
     </div>

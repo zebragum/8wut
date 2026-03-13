@@ -1,0 +1,23 @@
+commit af124123db4e975d67998311b8c25db736d4326b
+Author: zebragum <zthammond@gmail.com>
+Date:   Fri Mar 13 11:22:44 2026 -0700
+
+    chore: temp health check debug
+
+M	api/src/index.ts
+
+commit e5337c0f9cea7de2571e50a58544d4f78a1893f8
+Author: zebragum <zthammond@gmail.com>
+Date:   Fri Mar 13 11:11:08 2026 -0700
+
+    fix: move debug route above id route
+
+M	api/src/routes/posts.ts
+
+commit 2d8ad42f9b82cb297b799beaad99e1859102b29c
+Author: zebragum <zthammond@gmail.com>
+Date:   Fri Mar 13 11:08:36 2026 -0700
+
+    chore: add debug endpoint for posts scope
+
+M	api/src/routes/posts.ts

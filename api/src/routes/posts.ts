@@ -77,8 +77,13 @@ router.get('/debug', async (req: Request, res: Response) => {
 // GET /posts/discovery - all posts from everyone (discovery/home)
 router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
+    const safeLimit = Math.min(Math.max(1, limit), 50);
+
     const { rows } = await pool.query(
-      `SELECT id FROM posts WHERE scope = 'everyone' ORDER BY created_at DESC LIMIT 50`
+      `SELECT id FROM posts WHERE scope = 'everyone' ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [safeLimit, offset]
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     res.json(posts.filter(Boolean));
