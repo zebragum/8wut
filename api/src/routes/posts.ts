@@ -130,8 +130,14 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
 // POST /posts - create a post
 router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
   const { caption, textBackground, images, scope, created_at } = req.body;
+  console.log(`[POSTS] Creating post. Scope received: "${scope}"`);
+  
+  // Default to everyone, but if 'private' (or legacy 'friends') is sent, make it private.
   let postScope = 'everyone';
-  if (scope === 'private') postScope = 'private';
+  if (scope === 'private' || scope === 'friends') {
+    postScope = 'private';
+  }
+  console.log(`[POSTS] Final scope for DB: "${postScope}"`);
 
   if (!images?.length && !textBackground) {
     res.status(400).json({ error: 'Post must have images or a text background' });

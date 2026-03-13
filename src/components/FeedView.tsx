@@ -13,7 +13,7 @@ export default function FeedView({ filter }: FeedViewProps) {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [scope, setScope] = useState<'everyone' | 'friends'>('everyone');
+  const [scope, setScope] = useState<'everyone'>('everyone');
   const [viewMode, setViewMode] = useState<'grid' | 'card'>('card');
   const [focusedPost, setFocusedPost] = useState<ApiPost | null>(null);
 
@@ -30,10 +30,6 @@ export default function FeedView({ filter }: FeedViewProps) {
           const discoveryPosts = await getDiscoveryFeed();
           // Filter: Everyone feed only shows posts with 'everyone' scope
           data = discoveryPosts.filter(p => p.scope === 'everyone');
-        } else if (scope === 'friends') {
-          const feedPosts = await getFeed();
-          // Filter: Friends feed shows posts from followed users, but excludes 'private' scope
-          data = feedPosts.filter(p => p.scope !== 'private');
         }
       }
       setPosts(data);
@@ -89,29 +85,7 @@ export default function FeedView({ filter }: FeedViewProps) {
     <div className="feed-view-container">
       {!filter && (
         <div className="feed-controls" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Scope Toggle: Everyone | Friends */}
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', borderRadius: '20px', padding: '4px', alignSelf: 'center' }}>
-            <button 
-              onClick={() => setScope('everyone')}
-              style={{ 
-                padding: '6px 20px', borderRadius: '16px', border: 'none', 
-                background: scope === 'everyone' ? 'var(--color-orange)' : 'transparent',
-                color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem'
-              }}
-            >
-              Everyone
-            </button>
-            <button 
-              onClick={() => setScope('friends')}
-              style={{ 
-                padding: '6px 20px', borderRadius: '16px', border: 'none', 
-                background: scope === 'friends' ? 'var(--color-orange)' : 'transparent',
-                color: 'white', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.9rem'
-              }}
-            >
-              Friends
-            </button>
-          </div>
+          {/* Scope Toggle removed - only Everyone now */}
 
           {/* View Toggle: Grid | Card */}
           <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
