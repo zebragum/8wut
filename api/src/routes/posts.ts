@@ -78,6 +78,16 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
   }
 });
 
+// GET /posts/debug
+router.get('/debug', async (req: Request, res: Response) => {
+  try {
+    const { rows } = await pool.query('SELECT id, author_id, scope, created_at, caption FROM posts ORDER BY created_at DESC LIMIT 10');
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /posts/search?q=query
 router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
   const query = req.query.q as string;
