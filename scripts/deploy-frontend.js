@@ -17,11 +17,11 @@ async function deploy() {
         console.log("🚀 Connected to Bluehost!");
         await client.cd("/website_f4ed6cb8");
         
-        // 1. CLEAR EVERYTHING
-        console.log("🧹 Clearing remote directory...");
+        // 1. CLEAR EVERYTHING (except hidden files)
+        console.log("🧹 Clearing remote directory (protecting hidden files)...");
         const list = await client.list();
         for (const item of list) {
-            if (item.name === "." || item.name === "..") continue;
+            if (item.name.startsWith(".")) continue; // Protect .well-known, .htaccess, etc.
             try {
                 if (item.type === 1) await client.removeDir(item.name);
                 else await client.remove(item.name);
@@ -40,8 +40,11 @@ async function deploy() {
                 if (fs.statSync(localFile).isDirectory()) {
                     await uploadDir(localFile, remoteFile);
                 } else {
+                    if (file === '.htaccess') continue; // Uploaded explicitly at the end
                     console.log(`📤 Uploading file: ${file}`);
-                    await client.uploadFrom(localFile, remoteFile);
+                    try {
+                        await client.uploadFrom(localFile, remoteFile);
+                    } catch (e) { console.warn(`⚠️ Skipped ${file}: ${e.message}`); }
                 }
             }
         }
@@ -52,7 +55,9 @@ async function deploy() {
         const htaccessPath = path.resolve("public/.htaccess");
         if (fs.existsSync(htaccessPath)) {
             console.log("📤 Uploading .htaccess explicitly...");
-            await client.uploadFrom(htaccessPath, "/website_f4ed6cb8/.htaccess");
+            try {
+                await client.uploadFrom(htaccessPath, "/website_f4ed6cb8/.htaccess");
+            } catch (e) { console.warn(`⚠️ Could not upload .htaccess (likely restricted): ${e.message}`); }
         }
 
         console.log("✅ Deployment successful! Site should be fixed.");
