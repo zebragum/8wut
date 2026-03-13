@@ -33,7 +33,14 @@ app.use(cors({
 
 app.use(express.json());
 
-app.get('/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+app.get('/health', async (_req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT p.id, u.username, p.scope, p.caption FROM posts p JOIN users u ON u.id = p.author_id ORDER BY p.created_at DESC LIMIT 10');
+    res.json({ status: 'ok', time: new Date().toISOString(), recent_posts: rows });
+  } catch (err: any) {
+    res.json({ status: 'error', error: err.message });
+  }
+});
 
 app.use('/auth', authRoutes);
 app.use('/posts', postsRoutes);
