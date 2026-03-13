@@ -239,13 +239,8 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
     );
     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
     
-    // Filter posts: if it's scoped to friends, only the author or a follower can see it
-    const visiblePosts = posts.filter(Boolean).filter(p => {
-      if (p!.scope === 'friends') {
-        return p!.author.id === req.userId || p!._isFollowing;
-      }
-      return true;
-    }).map(p => {
+    // Every post by this user is visible on their profile page
+    const visiblePosts = posts.filter(Boolean).map(p => {
       const { _isFollowing, ...cleanPost } = p!;
       return cleanPost;
     });

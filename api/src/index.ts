@@ -46,7 +46,6 @@ app.use('/notifications', notificationsRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/admin', adminRoutes);
 
-/*
 pool.query(`
   ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_hearted BOOLEAN DEFAULT FALSE;
   ALTER TABLE users ADD COLUMN IF NOT EXISTS invite_code_used TEXT;
@@ -54,7 +53,6 @@ pool.query(`
 `)
   .then(() => console.log('Live PostgreSQL migrations complete'))
   .catch((err) => console.error('Migration failed:', err));
-*/
 
 app.listen(PORT, () => {
   console.log(`8wut API running on port ${PORT}`);

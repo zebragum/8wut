@@ -14,7 +14,7 @@ export default function CreatePost() {
   const [caption, setCaption] = useState('');
   const [bgColor, setBgColor] = useState<ColorPreset>('skyblue');
   
-  const [scope, setScope] = useState<'everyone' | 'friends' | 'private'>('everyone');
+  const [scope, setScope] = useState<'everyone' | 'private'>('everyone');
   const [customDate, setCustomDate] = useState(
     new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)
   );
@@ -283,7 +283,7 @@ export default function CreatePost() {
 
                 {/* Scope Toggle */}
                 <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', borderRadius: '16px', padding: '3px' }}>
-                  {(['everyone', 'friends', 'private'] as const).map(s => (
+                  {(['everyone', 'private'] as const).map(s => (
                     <button 
                       key={s}
                       type="button"

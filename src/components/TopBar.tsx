@@ -126,7 +126,6 @@ export default function TopBar({ currentView }: TopBarProps) {
             zIndex: 100, overflow: 'hidden'
           }}>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications' })); }}>Notifications</button>
-            <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'search' })); }}>Search Posts</button>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); setShowSettings(true); }}>Settings</button>
             {currentUser?.is_admin && (
               <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'admin' })); }}>Admin Panel</button>
@@ -165,7 +164,7 @@ export default function TopBar({ currentView }: TopBarProps) {
 
             <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px' }}>
               <h3 style={{ margin: '0 0 8px 0', color: 'white', fontSize: '1.1rem' }}>Privacy & Safety</h3>
-              <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', lineHeight: 1.4, margin: 0 }}>We do not monetize your data. Login is only required for secure participation in this community food journaling app.</p>
+              <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', lineHeight: 1.4, margin: 0 }}>we don't track or monetize user data. All data used is only for app functionality.</p>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
