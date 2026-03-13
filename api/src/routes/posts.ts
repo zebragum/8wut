@@ -64,6 +64,16 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /posts/debug
+router.get('/debug', async (req: Request, res: Response) => {
+  try {
+    const { rows } = await pool.query('SELECT id, author_id, scope, created_at, caption FROM posts ORDER BY created_at DESC LIMIT 10');
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /posts/discovery - all posts from everyone (discovery/home)
 router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
@@ -75,16 +85,6 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: 'Server error', details: err.message });
-  }
-});
-
-// GET /posts/debug
-router.get('/debug', async (req: Request, res: Response) => {
-  try {
-    const { rows } = await pool.query('SELECT id, author_id, scope, created_at, caption FROM posts ORDER BY created_at DESC LIMIT 10');
-    res.json(rows);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
   }
 });
 
