@@ -56,7 +56,15 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
        LIMIT 50`,
       [req.userId]
     );
-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+    const chunkedFetchAll = async (ids: string[], limit: number) => {
+      const results = [];
+      for (let i = 0; i < ids.length; i += limit) {
+        const chunk = ids.slice(i, i + limit);
+        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
+      }
+      return results;
+    };
+    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
     res.json(posts.filter(Boolean));
   } catch (err: any) {
     console.error(err);
@@ -85,7 +93,15 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
       `SELECT id FROM posts WHERE scope = 'everyone' ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [safeLimit, offset]
     );
-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+    const chunkedFetchAll = async (ids: string[], limit: number) => {
+      const results = [];
+      for (let i = 0; i < ids.length; i += limit) {
+        const chunk = ids.slice(i, i + limit);
+        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
+      }
+      return results;
+    };
+    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
     res.json(posts.filter(Boolean));
   } catch (err: any) {
     console.error(err);
@@ -120,7 +136,15 @@ router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
        LIMIT 50`,
       params
     );
-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+    const chunkedFetchAll = async (ids: string[], limit: number) => {
+      const results = [];
+      for (let i = 0; i < ids.length; i += limit) {
+        const chunk = ids.slice(i, i + limit);
+        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
+      }
+      return results;
+    };
+    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
     res.json(posts.filter(Boolean));
   } catch (err: any) {
     console.error('Search Error:', err);
@@ -258,7 +282,15 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
       'SELECT id FROM posts WHERE author_id = $1 ORDER BY created_at DESC',
       [req.params.userId as string]
     );
-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+    const chunkedFetchAll = async (ids: string[], limit: number) => {
+      const results = [];
+      for (let i = 0; i < ids.length; i += limit) {
+        const chunk = ids.slice(i, i + limit);
+        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
+      }
+      return results;
+    };
+    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
     
     // Every post by this user is visible on their profile page
     const visiblePosts = posts.filter(Boolean).map(p => {
@@ -281,7 +313,15 @@ router.get('/fridge/:userId', requireAuth, async (req: AuthRequest, res: Respons
        WHERE fs.user_id = $1 ORDER BY fs.created_at DESC`,
       [req.params.userId as string]
     );
-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+    const chunkedFetchAll = async (ids: string[], limit: number) => {
+      const results = [];
+      for (let i = 0; i < ids.length; i += limit) {
+        const chunk = ids.slice(i, i + limit);
+        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
+      }
+      return results;
+    };
+    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
     res.json(posts.filter(Boolean));
   } catch (err) {
     console.error(err);
