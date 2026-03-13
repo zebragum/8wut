@@ -108,7 +108,7 @@ export default function AuthView() {
         {!isLoginView && (
           <input
             type="text"
-            placeholder="Invite Code (e.g. 8WUT-A1)"
+            placeholder="Invite Code"
             value={inviteCode}
             onChange={e => setInviteCode(e.target.value.toUpperCase())}
             style={{ ...inputStyle, letterSpacing: '1px', fontWeight: '600' }}

@@ -126,9 +126,7 @@ export default function TopBar({ currentView }: TopBarProps) {
             zIndex: 100, overflow: 'hidden'
           }}>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications' })); }}>Notifications</button>
-            {(import.meta.env.MODE === 'staging' || currentUser?.is_admin) && (
-              <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'search' })); }}>Search Posts</button>
-            )}
+            <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'search' })); }}>Search Posts</button>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); setShowSettings(true); }}>Settings</button>
             {currentUser?.is_admin && (
               <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'admin' })); }}>Admin Panel</button>

@@ -22,15 +22,19 @@ async function deploy() {
         await client.ensureDir(remoteStagingDir);
         await client.cd(remoteStagingDir);
         
-        // 1. CLEAR STAGING DIRECTORY
+        // 1. CLEAR STAGING DIRECTORY (Gracious)
         console.log("🧹 Clearing remote staging directory...");
-        const list = await client.list();
-        for (const item of list) {
-            if (item.name === "." || item.name === "..") continue;
-            try {
-                if (item.type === 1) await client.removeDir(item.name);
-                else await client.remove(item.name);
-            } catch (e) { console.warn(`Could not delete ${item.name}: ${e.message}`); }
+        try {
+            const list = await client.list();
+            for (const item of list) {
+                if (item.name === "." || item.name === "..") continue;
+                try {
+                    if (item.type === 1) await client.removeDir(item.name, true); // recursive
+                    else await client.remove(item.name);
+                } catch (e) { console.warn(`Could not delete ${item.name}: ${e.message}`); }
+            }
+        } catch (e) {
+            console.warn("Could not list or clear directory, continuing with upload...");
         }
 
         // 2. UPLOAD FILES MANUALLY
