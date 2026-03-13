@@ -29,8 +29,8 @@ export async function getFeed(): Promise<ApiPost[]> {
   return data;
 }
 
-export async function getDiscoveryFeed(): Promise<ApiPost[]> {
-  const { data } = await apiClient.get<ApiPost[]>('/posts/discovery');
+export async function getDiscoveryFeed(limit = 50, offset = 0): Promise<ApiPost[]> {
+  const { data } = await apiClient.get<ApiPost[]>(`/posts/discovery?limit=${limit}&offset=${offset}`);
   return data;
 }
 
