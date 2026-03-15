@@ -198,7 +198,7 @@ export default function CreatePost() {
                 disabled={uploading}
                 style={{ flex: 1, padding: '12px', borderRadius: '8px', background: 'var(--color-skyblue)', border: 'none', color: 'white', fontWeight: 'bold' }}
               >
-                {uploading ? 'Processing...' : 'Apply Format'}
+                {uploading ? 'Processing...' : 'Crop'}
               </button>
             </div>
           </div>
