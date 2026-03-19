@@ -1,0 +1,166 @@
+commit 971b70dc1750a6367bef50e7f324e4f9534fe399
+Author: zebragum <zthammond@gmail.com>
+Date:   Fri Mar 13 14:20:52 2026 -0700
+
+    fix: chunk fetchPost promises to prevent PG connection exhaustion
+
+diff --git a/api/src/routes/posts.ts b/api/src/routes/posts.ts
+index 341f450..8fbfc3f 100644
+--- a/api/src/routes/posts.ts
++++ b/api/src/routes/posts.ts
+@@ -56,7 +56,15 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
+        LIMIT 50`,
+       [req.userId]
+     );
+-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
++    const chunkedFetchAll = async (ids: string[], limit: number) => {
++      const results = [];
++      for (let i = 0; i < ids.length; i += limit) {
++        const chunk = ids.slice(i, i + limit);
++        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
++      }
++      return results;
++    };
++    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
+     res.json(posts.filter(Boolean));
+   } catch (err: any) {
+     console.error(err);
+@@ -85,7 +93,15 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
+       `SELECT id FROM posts WHERE scope = 'everyone' ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+       [safeLimit, offset]
+     );
+-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
++    const chunkedFetchAll = async (ids: string[], limit: number) => {
++      const results = [];
++      for (let i = 0; i < ids.length; i += limit) {
++        const chunk = ids.slice(i, i + limit);
++        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
++      }
++      return results;
++    };
++    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
+     res.json(posts.filter(Boolean));
+   } catch (err: any) {
+     console.error(err);
+@@ -120,7 +136,15 @@ router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
+        LIMIT 50`,
+       params
+     );
+-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
++    const chunkedFetchAll = async (ids: string[], limit: number) => {
++      const results = [];
++      for (let i = 0; i < ids.length; i += limit) {
++        const chunk = ids.slice(i, i + limit);
++        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
++      }
++      return results;
++    };
++    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
+     res.json(posts.filter(Boolean));
+   } catch (err: any) {
+     console.error('Search Error:', err);
+@@ -258,7 +282,15 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
+       'SELECT id FROM posts WHERE author_id = $1 ORDER BY created_at DESC',
+       [req.params.userId as string]
+     );
+-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
++    const chunkedFetchAll = async (ids: string[], limit: number) => {
++      const results = [];
++      for (let i = 0; i < ids.length; i += limit) {
++        const chunk = ids.slice(i, i + limit);
++        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
++      }
++      return results;
++    };
++    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
+     
+     // Every post by this user is visible on their profile page
+     const visiblePosts = posts.filter(Boolean).map(p => {
+@@ -281,7 +313,15 @@ router.get('/fridge/:userId', requireAuth, async (req: AuthRequest, res: Respons
+        WHERE fs.user_id = $1 ORDER BY fs.created_at DESC`,
+       [req.params.userId as string]
+     );
+-    const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
++    const chunkedFetchAll = async (ids: string[], limit: number) => {
++      const results = [];
++      for (let i = 0; i < ids.length; i += limit) {
++        const chunk = ids.slice(i, i + limit);
++        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
++      }
++      return results;
++    };
++    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
+     res.json(posts.filter(Boolean));
+   } catch (err) {
+     console.error(err);
+
+commit 5b5464dbe70e646fe0014a1801285709a3c312f5
+Author: zebragum <zthammond@gmail.com>
+Date:   Fri Mar 13 11:48:04 2026 -0700
+
+    feat: infinite scroll and pagination on discovery feed
+
+diff --git a/api/src/routes/posts.ts b/api/src/routes/posts.ts
+index 1b37629..341f450 100644
+--- a/api/src/routes/posts.ts
++++ b/api/src/routes/posts.ts
+@@ -77,8 +77,13 @@ router.get('/debug', async (req: Request, res: Response) => {
+ // GET /posts/discovery - all posts from everyone (discovery/home)
+ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) => {
+   try {
++    const limit = parseInt(req.query.limit as string) || 50;
++    const offset = parseInt(req.query.offset as string) || 0;
++    const safeLimit = Math.min(Math.max(1, limit), 50);
++
+     const { rows } = await pool.query(
+-      `SELECT id FROM posts WHERE scope = 'everyone' ORDER BY created_at DESC LIMIT 50`
++      `SELECT id FROM posts WHERE scope = 'everyone' ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
++      [safeLimit, offset]
+     );
+     const posts = await Promise.all(rows.map(r => fetchPost(r.id, req.userId!)));
+     res.json(posts.filter(Boolean));
+
+commit e5337c0f9cea7de2571e50a58544d4f78a1893f8
+Author: zebragum <zthammond@gmail.com>
+Date:   Fri Mar 13 11:11:08 2026 -0700
+
+    fix: move debug route above id route
+
+diff --git a/api/src/routes/posts.ts b/api/src/routes/posts.ts
+index a1c1725..1b37629 100644
+--- a/api/src/routes/posts.ts
++++ b/api/src/routes/posts.ts
+@@ -64,6 +64,16 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
+   }
+ });
+ 
++// GET /posts/debug
++router.get('/debug', async (req: Request, res: Response) => {
++  try {
++    const { rows } = await pool.query('SELECT id, author_id, scope, created_at, caption FROM posts ORDER BY created_at DESC LIMIT 10');
++    res.json(rows);
++  } catch (err: any) {
++    res.status(500).json({ error: err.message });
++  }
++});
++
+ // GET /posts/discovery - all posts from everyone (discovery/home)
+ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) => {
+   try {
+@@ -78,16 +88,6 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
+   }
+ });
+ 
+-// GET /posts/debug
+-router.get('/debug', async (req: Request, res: Response) => {
+-  try {
+-    const { rows } = await pool.query('SELECT id, author_id, scope, created_at, caption FROM posts ORDER BY created_at DESC LIMIT 10');
+-    res.json(rows);
+-  } catch (err: any) {
+-    res.status(500).json({ error: err.message });
+-  }
+-});
+-
+ // GET /posts/search?q=query
+ router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
+   const query = req.query.q as string;

@@ -32,9 +32,9 @@ export default function FeedView({ filter }: FeedViewProps) {
         data = await getUserFridgePosts(currentUser.id);
         setHasMore(false);
       } else {
-        const discoveryPosts = await getDiscoveryFeed(5, 0);
+        const discoveryPosts = await getDiscoveryFeed(20, 0);
         data = discoveryPosts.filter(p => p.scope === 'everyone');
-        setHasMore(discoveryPosts.length === 5);
+        setHasMore(discoveryPosts.length === 20);
       }
       setPosts(data);
       setPage(0);
@@ -52,8 +52,8 @@ export default function FeedView({ filter }: FeedViewProps) {
     setLoadingMore(true);
     try {
       const nextPage = page + 1;
-      const offset = nextPage * 5;
-      const discoveryPosts = await getDiscoveryFeed(5, offset);
+      const offset = nextPage * 20;
+      const discoveryPosts = await getDiscoveryFeed(20, offset);
       const data = discoveryPosts.filter(p => p.scope === 'everyone');
       setPosts(prev => {
         const existingIds = new Set(prev.map(p => p.id));
@@ -61,7 +61,7 @@ export default function FeedView({ filter }: FeedViewProps) {
         return [...prev, ...newUnique];
       });
       setPage(nextPage);
-      setHasMore(discoveryPosts.length === 5);
+      setHasMore(discoveryPosts.length === 20);
     } catch {
       console.error('Could not load more posts');
     } finally {
@@ -76,7 +76,7 @@ export default function FeedView({ filter }: FeedViewProps) {
           loadMore();
         }
       },
-      { threshold: 0.1 }
+      { rootMargin: '800px' }
     );
 
     if (observerTarget.current) {

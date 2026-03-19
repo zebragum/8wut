@@ -8,7 +8,7 @@ type AuthContextType = {
   currentUser: ApiUser | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, password: string, inviteCode: string) => Promise<void>;
+  register: (username: string, password: string, inviteCode?: string) => Promise<void>;
   logout: () => void;
   updatePassword: (currentPass: string, newPass: string) => Promise<void>;
   updateUsername: (newName: string) => Promise<void>;
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUser(user);
   };
 
-  const register = async (username: string, password: string, inviteCode: string) => {
+  const register = async (username: string, password: string, inviteCode?: string) => {
     const { user } = await apiRegister(username, password, inviteCode);
     setCurrentUser(user);
   };

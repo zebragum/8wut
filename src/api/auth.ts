@@ -20,9 +20,9 @@ export async function login(username: string, password: string) {
   return data;
 }
 
-export async function register(username: string, password: string, inviteCode: string) {
+export async function register(username: string, password: string, inviteCode?: string, website?: string) {
   const { data } = await apiClient.post<{ token: string; user: ApiUser }>('/auth/register', {
-    username, password, inviteCode
+    username, password, inviteCode: inviteCode || undefined, website
   });
   localStorage.setItem('8wut-token', data.token);
   return data;

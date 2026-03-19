@@ -6,14 +6,20 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-const MAX_USERS = 40;
+// Beta: no user cap
 
 // POST /auth/register
 router.post('/register', async (req: Request, res: Response) => {
-  const { username, password, inviteCode } = req.body;
+  const { username, password, inviteCode, website } = req.body;
 
-  if (!username?.trim() || !password?.trim() || !inviteCode?.trim()) {
-    res.status(400).json({ error: 'username, password, and inviteCode are required' });
+  // Honeypot: bots fill this invisible field, humans never do
+  if (website) {
+    res.status(400).json({ error: 'Registration failed' });
+    return;
+  }
+
+  if (!username?.trim() || !password?.trim()) {
+    res.status(400).json({ error: 'username and password are required' });
     return;
   }
   if (/\s/.test(username.trim())) {
@@ -25,23 +31,6 @@ router.post('/register', async (req: Request, res: Response) => {
   try {
     await client.query('BEGIN');
 
-    // Alpha gate: max users
-    const { rows: [{ count }] } = await client.query('SELECT COUNT(*) FROM users');
-    if (parseInt(count) >= MAX_USERS) {
-      res.status(403).json({ error: 'Alpha is full. Thanks for your interest!' });
-      return;
-    }
-
-    // Validate invite code
-    const { rows: [invite] } = await client.query(
-      'SELECT * FROM invite_codes WHERE code = $1 AND times_used < max_uses',
-      [inviteCode.trim().toUpperCase()]
-    );
-    if (!invite) {
-      res.status(400).json({ error: 'Invalid or already-used invite code' });
-      return;
-    }
-
     // Check username taken
     const { rows: [existing] } = await client.query(
       'SELECT id FROM users WHERE lower(username) = lower($1)',
@@ -52,17 +41,29 @@ router.post('/register', async (req: Request, res: Response) => {
       return;
     }
 
+    // Validate invite code if provided (optional for beta)
+    const codeUsed = inviteCode?.trim().toUpperCase() || null;
+    if (codeUsed) {
+      const { rows: [invite] } = await client.query(
+        'SELECT * FROM invite_codes WHERE code = $1 AND times_used < max_uses',
+        [codeUsed]
+      );
+      if (!invite) {
+        res.status(400).json({ error: 'Invalid or already-used invite code' });
+        return;
+      }
+      // Mark invite used
+      await client.query(
+        'UPDATE invite_codes SET times_used = times_used + 1 WHERE code = $1',
+        [codeUsed]
+      );
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
     const { rows: [user] } = await client.query(
       `INSERT INTO users (username, password_hash, invite_code_used)
        VALUES ($1, $2, $3) RETURNING id, username, avatar_url, bio, is_admin, created_at`,
-      [username.trim(), passwordHash, inviteCode.trim().toUpperCase()]
-    );
-
-    // Mark invite used
-    await client.query(
-      'UPDATE invite_codes SET times_used = times_used + 1 WHERE code = $1',
-      [inviteCode.trim().toUpperCase()]
+      [username.trim(), passwordHash, codeUsed]
     );
 
     await client.query('COMMIT');

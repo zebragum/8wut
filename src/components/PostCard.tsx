@@ -35,7 +35,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
     setPost(prev => ({ ...prev, hasLiked: !prev.hasLiked, likes: prev.likes + (prev.hasLiked ? -1 : 1) }));
     if (!wasLiked) {
       setShowHeartAnim(true);
-      setTimeout(() => setShowHeartAnim(false), 500);
+      setTimeout(() => setShowHeartAnim(false), 2500);
     }
     try {
       const result = wasLiked ? await unlikePost(post.id) : await likePost(post.id);
@@ -166,7 +166,7 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
 
           {/* Heart animation */}
           {showHeartAnim && (
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '4rem', pointerEvents: 'none', animation: 'slideUpFade 0.5s ease forwards', zIndex: 20 }}>
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '4rem', pointerEvents: 'none', animation: 'spaceyFloat 2.5s cubic-bezier(0.25, 1, 0.5, 1) forwards', zIndex: 20 }}>
               ❤️
             </div>
           )}

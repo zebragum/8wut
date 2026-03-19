@@ -1,0 +1,6 @@
+Server:  UnKnown
+Address:  103.86.96.100
+
+Name:    8wut.org
+Address:  50.6.153.213
+

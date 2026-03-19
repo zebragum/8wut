@@ -7,7 +7,7 @@ export default function AuthView() {
   const [isLoginView, setIsLoginView] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
+  const [website, setWebsite] = useState(''); // honeypot
   const [loading, setLoading] = useState(false);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -16,17 +16,13 @@ export default function AuthView() {
       toast.error('Please enter a username and password.');
       return;
     }
-    if (!isLoginView && !inviteCode.trim()) {
-      toast.error('An invite code is required to join 8wut alpha.');
-      return;
-    }
 
     setLoading(true);
     try {
       if (isLoginView) {
         await login(username, password);
       } else {
-        await register(username, password, inviteCode);
+        await register(username, password, undefined);
       }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
@@ -106,13 +102,15 @@ export default function AuthView() {
         />
 
         {!isLoginView && (
+          /* Honeypot — invisible to humans, bots auto-fill it */
           <input
             type="text"
-            placeholder="Invite Code"
-            value={inviteCode}
-            onChange={e => setInviteCode(e.target.value.toUpperCase())}
-            style={{ ...inputStyle, letterSpacing: '1px', fontWeight: '600' }}
-            disabled={loading}
+            name="website"
+            value={website}
+            onChange={e => setWebsite(e.target.value)}
+            autoComplete="off"
+            tabIndex={-1}
+            style={{ position: 'absolute', left: '-9999px', opacity: 0, height: 0, width: 0 }}
           />
         )}
 
@@ -143,13 +141,13 @@ export default function AuthView() {
             style={{ background: 'transparent', border: 'none', color: 'white', textDecoration: 'underline', cursor: 'pointer', opacity: 0.8, fontFamily: 'inherit' }}
             onClick={() => setIsLoginView(!isLoginView)}
           >
-            {isLoginView ? "Need an invite? Sign up" : "Already have an account? Log in"}
+            {isLoginView ? "Don't have an account? Sign up" : "Already have an account? Log in"}
           </button>
         </div>
       </form>
 
       <p style={{ marginTop: '32px', opacity: 0.6, fontSize: '0.85rem', maxWidth: '300px', textAlign: 'center' }}>
-        8wut is invite-only during alpha. Ask Zach for a code.
+        8wut — Community food photojournaling for the people who love to eat.
       </p>
     </div>
   );

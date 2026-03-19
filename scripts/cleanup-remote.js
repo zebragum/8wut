@@ -10,10 +10,14 @@ async function run() {
             password: "1dellaMuckle-0rca",
             secure: false
         });
-        await client.cd('/website_f4ed6cb8');
-        console.log("🗑 Removing large non-essential image to free space...");
-        await client.remove("monotile.jpg");
-        console.log("✅ Removed monotile.jpg (3.5MB)");
+        console.log("🗑 Emptying /assets directory to free space...");
+        await client.cd('/website_f4ed6cb8/assets');
+        const list = await client.list();
+        for (const item of list) {
+            console.log("Removing", item.name);
+            await client.remove(item.name);
+        }
+        console.log("✅ Assets cleared.");
     } catch (e) {
         console.error("Cleanup failed:", e);
     } finally {

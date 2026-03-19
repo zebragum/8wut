@@ -8,9 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && node scripts/deploy-frontend.js",
-    "build:staging": "tsc -b && vite build --mode staging",
-    "deploy:staging": "npm run build:staging && node scripts/deploy-staging.js"
+    "deploy": "npm run build && node scripts/deploy-frontend.js"
   },
   "dependencies": {
     "axios": "^1.13.6",
