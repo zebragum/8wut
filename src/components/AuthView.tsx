@@ -17,7 +17,17 @@ export default function AuthView() {
   const [website, setWebsite] = useState(''); // honeypot
   const [loading, setLoading] = useState(false);
   const [showThemePicker, setShowThemePicker] = useState(false);
+  const [showInstallStep, setShowInstallStep] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState('theme-grass');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+
+  useState(() => {
+    const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+  });
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,10 +57,25 @@ export default function AuthView() {
     }
   };
 
-  const applyThemeAndEnter = () => {
+  const applyThemeAndContinue = () => {
     localStorage.setItem('8wut-theme', selectedTheme);
     window.dispatchEvent(new CustomEvent('change-theme', { detail: selectedTheme }));
-    // Force a re-render by reloading — the AuthContext already has the user logged in
+    if (isStandalone) {
+      window.location.reload();
+    } else {
+      setShowInstallStep(true);
+    }
+  };
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      setDeferredPrompt(null);
+    }
+  };
+
+  const skipAndEnter = () => {
     window.location.reload();
   };
 
@@ -106,7 +131,7 @@ export default function AuthView() {
         </div>
 
         <button
-          onClick={applyThemeAndEnter}
+          onClick={applyThemeAndContinue}
           style={{
             padding: '16px 48px', borderRadius: '16px',
             background: 'var(--color-orange)', border: 'none',
@@ -115,7 +140,88 @@ export default function AuthView() {
             boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
             transition: 'transform 0.2s ease'
           }}
-        >Let's go →</button>
+        >Next →</button>
+      </div>
+    );
+  }
+
+  // Step 3: Add to Homescreen
+  if (showInstallStep) {
+    return (
+      <div style={{
+        width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
+        color: 'white', padding: '24px'
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px' }}>
+          <img src="/8logo.svg" alt="8wut" style={{ width: '100px', height: '100px', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }} />
+          <h2 style={{ margin: '16px 0 8px 0', fontFamily: "'Cooper Black', 'Fredoka One', cursive", fontSize: '1.5rem' }}>Get the App Experience</h2>
+          <p style={{ opacity: 0.8, margin: 0, fontSize: '0.95rem', textAlign: 'center', maxWidth: '300px', lineHeight: 1.5 }}>
+            Add 8wut to your homescreen for fullscreen, fast, and always one tap away.
+          </p>
+        </div>
+
+        <div style={{
+          width: '100%', maxWidth: '340px',
+          background: 'rgba(255,255,255,0.1)', borderRadius: '20px',
+          padding: '20px', marginBottom: '24px',
+          backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)'
+        }}>
+          {isIOS ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-skyblue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>1</div>
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>Tap the <strong>Share</strong> button ⬆️ at the bottom of Safari</p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>2</div>
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>Scroll down and tap <strong>"Add to Home Screen"</strong></p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-lavender)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>3</div>
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>Tap <strong>"Add"</strong> — that's it!</p>
+              </div>
+            </div>
+          ) : deferredPrompt ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <p style={{ margin: 0, fontSize: '0.95rem', textAlign: 'center' }}>Tap below to install 8wut as an app:</p>
+              <button
+                onClick={handleInstallClick}
+                style={{
+                  padding: '14px 32px', borderRadius: '14px',
+                  background: 'var(--color-skyblue)', border: 'none',
+                  color: 'white', fontWeight: 'bold', fontSize: '1.1rem',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                  display: 'flex', alignItems: 'center', gap: '8px'
+                }}
+              >📲 Install App</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-skyblue)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>1</div>
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>Open your browser menu <strong>⋮</strong></p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>2</div>
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={skipAndEnter}
+          style={{
+            padding: '16px 48px', borderRadius: '16px',
+            background: 'var(--color-orange)', border: 'none',
+            color: 'white', fontWeight: 'bold', fontSize: '1.2rem',
+            cursor: 'pointer', fontFamily: 'inherit',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+          }}
+        >{isIOS || !deferredPrompt ? "Got it, let's go →" : "Skip for now →"}</button>
       </div>
     );
   }

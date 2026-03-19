@@ -21,6 +21,14 @@ export default function TopBar({ currentView }: TopBarProps) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const { isSupported, subscription, subscribe, unsubscribe } = usePushNotifications();
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+
+  useState(() => {
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener('beforeinstallprompt', handler);
+  });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -167,6 +175,22 @@ export default function TopBar({ currentView }: TopBarProps) {
               <h3 style={{ margin: '0 0 8px 0', color: 'white', fontSize: '1.1rem' }}>Privacy & Safety</h3>
               <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', lineHeight: 1.4, margin: 0 }}>we don't track or monetize user data. All data used is only for app functionality.</p>
             </div>
+
+            {!isStandaloneMode && (
+              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px' }}>
+                <h3 style={{ margin: '0 0 8px 0', color: 'white', fontSize: '1.1rem' }}>Install App</h3>
+                {installPrompt ? (
+                  <button
+                    onClick={async () => { installPrompt.prompt(); await installPrompt.userChoice; setInstallPrompt(null); }}
+                    style={{ padding: '10px 20px', borderRadius: '10px', background: 'var(--color-orange)', border: 'none', color: 'white', fontWeight: 'bold', fontSize: '0.95rem', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >📲 Add to Homescreen</button>
+                ) : isIOSDevice ? (
+                  <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>Tap the <strong>Share</strong> button ⬆️ in Safari, then <strong>"Add to Home Screen"</strong></p>
+                ) : (
+                  <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.85rem', lineHeight: 1.5, margin: 0 }}>Open your browser menu <strong>⋮</strong> and tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></p>
+                )}
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <h4 style={{ margin: '0', color: 'white', textAlign: 'center', gridColumn: '1 / -1' }}>Background Theme</h4>
