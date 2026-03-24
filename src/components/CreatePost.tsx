@@ -205,60 +205,62 @@ export default function CreatePost() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
             
-            {/* 2. CAMERA AND GALLERY BUTTONS */}
+            {/* 2. CAMERA AND GALLERY BUTTONS — centered in available space */}
             {!hasImages && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '40px', marginBottom: '40px' }}>
-                <button
-                  className="btn-camera"
-                  style={{
-                    width: '90px', height: '90px', borderRadius: '50%',
-                    background: 'var(--color-lavender)',
-                    border: 'none',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                    transition: 'transform 0.2s',
-                    opacity: uploading ? 0.5 : 1,
-                    color: 'white', fontWeight: 'bold', fontSize: '0.9rem'
-                  }}
-                  onClick={() => cameraRef.current?.click()}
-                  disabled={uploading}
-                >
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                    <circle cx="12" cy="13" r="4"></circle>
-                  </svg>
-                  Camera
-                </button>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
+                  <button
+                    className="btn-camera"
+                    style={{
+                      width: '90px', height: '90px', borderRadius: '50%',
+                      background: 'var(--color-lavender)',
+                      border: 'none',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      cursor: 'pointer',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                      transition: 'transform 0.2s',
+                      opacity: uploading ? 0.5 : 1,
+                      color: 'white', fontWeight: 'bold', fontSize: '0.9rem'
+                    }}
+                    onClick={() => cameraRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                      <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    Camera
+                  </button>
 
-                <button
-                  className="btn-gallery"
-                  style={{
-                    width: '90px', height: '90px', borderRadius: '50%',
-                    background: 'var(--color-skyblue)',
-                    border: 'none',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    cursor: 'pointer',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                    transition: 'transform 0.2s',
-                    opacity: uploading ? 0.5 : 1,
-                    color: 'white', fontWeight: 'bold', fontSize: '0.9rem'
-                  }}
-                  onClick={() => galleryRef.current?.click()}
-                  disabled={uploading}
-                >
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
-                  </svg>
-                  Gallery
-                </button>
+                  <button
+                    className="btn-gallery"
+                    style={{
+                      width: '90px', height: '90px', borderRadius: '50%',
+                      background: 'var(--color-skyblue)',
+                      border: 'none',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                      cursor: 'pointer',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                      transition: 'transform 0.2s',
+                      opacity: uploading ? 0.5 : 1,
+                      color: 'white', fontWeight: 'bold', fontSize: '0.9rem'
+                    }}
+                    onClick={() => galleryRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    Gallery
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* SPACER to push content to bottom */}
-            <div style={{ flex: 1 }} />
+            {/* Spacer only when images are present (pushes controls to bottom) */}
+            {hasImages && <div style={{ flex: 1 }} />}
 
             {/* 3. BUNDLED CONTROLS AT BOTTOM */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '16px' }}>

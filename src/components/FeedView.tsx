@@ -179,14 +179,14 @@ export default function FeedView({ filter }: FeedViewProps) {
             <button 
               onClick={() => setFocusedPost(null)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
+                display: 'flex', alignItems: 'center', gap: '10px',
                 background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white',
-                padding: '8px 14px', borderRadius: '20px', cursor: 'pointer',
-                fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 'bold',
-                marginBottom: '12px'
+                padding: '14px 24px', borderRadius: '24px', cursor: 'pointer',
+                fontFamily: 'inherit', fontSize: '1.2rem', fontWeight: 'bold',
+                marginBottom: '16px', backdropFilter: 'blur(4px)'
               }}
             >
-              ← Back to grid
+              <span style={{ fontSize: '1.6rem' }}>←</span> Back to grid
             </button>
             <PostCard post={focusedPost} onDeleted={handlePostDeleted} onUpdated={handlePostUpdated} />
           </div>
