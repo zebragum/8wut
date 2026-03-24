@@ -69,11 +69,15 @@ export default function FeedView({ filter }: FeedViewProps) {
     }
   }, [currentUser, loadingMore, hasMore, filter, page]);
 
+  // Keep a ref to the latest loadMore so the observer never calls a stale version
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && !loadingMore && hasMore) {
-          loadMore();
+        if (entries[0].isIntersecting) {
+          loadMoreRef.current();
         }
       },
       { rootMargin: '800px' }
@@ -84,7 +88,7 @@ export default function FeedView({ filter }: FeedViewProps) {
     }
 
     return () => observer.disconnect();
-  }, [loadMore, loadingMore, hasMore]);
+  }, [page, hasMore, loadingMore]);
 
   const handlePostDeleted = (postId: string) => {
     setPosts(prev => prev.filter(p => p.id !== postId));
