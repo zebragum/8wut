@@ -129,7 +129,7 @@ export default function CreatePost() {
       
       {/* 1. Dynamic Image Area / Preview */}
       {isCropping ? (
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: 'rgba(0,0,0,0.4)', marginBottom: '16px' }}>
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: 'rgba(0,0,0,0.4)', marginBottom: '16px', filter: 'saturate(1.3)' }}>
           <Cropper
             image={URL.createObjectURL(rawFiles[cropIndex])}
             crop={crop}

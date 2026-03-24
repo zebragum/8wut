@@ -32,6 +32,9 @@ export default async function getCroppedImg(
   ctx.rotate(getRadianAngle(rotation));
   ctx.translate(-safeArea / 2, -safeArea / 2);
 
+  // Boost saturation 30%
+  ctx.filter = 'saturate(1.3)';
+
   ctx.drawImage(
     image,
     safeArea / 2 - image.width * 0.5,
