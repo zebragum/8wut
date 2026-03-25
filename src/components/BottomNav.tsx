@@ -10,8 +10,12 @@ export default function BottomNav({ currentView, onViewChange }: BottomNavProps)
         className={`nav-item ${currentView === 'feed' ? 'active' : ''}`}
         onClick={() => {
           if (currentView === 'feed') {
-            // Already on feed — scroll to top
-            document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+            // Already on feed — scroll to top on ALL possible containers
+            const mc = document.querySelector('.main-content');
+            if (mc) mc.scrollTop = 0;
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
           } else {
             onViewChange('feed');
           }

@@ -36,7 +36,10 @@ export default function SearchPostsView() {
       setPosts(postResult.status === 'fulfilled' ? postResult.value : []);
       setUsers(userResult.status === 'fulfilled' ? userResult.value : []);
       if (postResult.status === 'rejected') console.error('Post search failed:', postResult.reason);
-      if (userResult.status === 'rejected') console.error('User search failed:', userResult.reason);
+      if (userResult.status === 'rejected') {
+        console.error('User search failed:', userResult.reason);
+        toast.error('User search failed — try again');
+      }
     } catch (err: any) {
       const msg = err.response?.data?.error || err.response?.data?.details || 'Search failed';
       toast.error(msg);
