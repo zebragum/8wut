@@ -247,11 +247,19 @@ export default function FeedView({ filter }: FeedViewProps) {
       )}
       
       {/* Infinite Scroll Observer Target */}
-      {!loading && hasMore && filter !== 'fridge' && posts.length > 0 && (
-        <div ref={observerTarget} style={{ height: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '20px 0' }}>
-          {loadingMore && <div style={{ width: '24px', height: '24px', border: '3px solid var(--color-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
-        </div>
-      )}
+      {/* Infinite Scroll Observer Target - always render to protect the ref binding */}
+      <div 
+        ref={observerTarget}
+        style={{ 
+          height: '40px', 
+          display: (!loading && hasMore && filter !== 'fridge' && posts.length > 0) ? 'flex' : 'none', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          margin: '20px 0' 
+        }}
+      >
+        {loadingMore && <div style={{ width: '24px', height: '24px', border: '3px solid var(--color-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
+      </div>
     </div>
   );
 }

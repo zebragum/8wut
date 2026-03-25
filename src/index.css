@@ -300,6 +300,8 @@ h1, h2, h3, h4, h5, p {
 .main-content.create-mode {
   padding-bottom: 74px;
   overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 

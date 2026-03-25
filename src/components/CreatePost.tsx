@@ -125,7 +125,7 @@ export default function CreatePost() {
   const isCropping = cropIndex >= 0;
 
   return (
-    <div className="create-post-view" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '12px 16px 80px 16px', overflowY: 'auto' }}>
+    <div className="create-post-view" style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '12px 16px 80px 16px', overflowY: 'auto' }}>
       
       {/* 1. Dynamic Image Area / Preview */}
       {isCropping ? (
