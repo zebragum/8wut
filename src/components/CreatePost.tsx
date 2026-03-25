@@ -203,12 +203,14 @@ export default function CreatePost() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
             
-            {/* 2. CAMERA AND GALLERY BUTTONS — pushed to bottom of available space */}
+            {/* FLEX SPACER: Dynamically eats all remaining top space, pushing EVERYTHING below to the bottom */}
+            <div style={{ flex: 1, minHeight: '20px' }} />
+            
+            {/* 2. CAMERA AND GALLERY BUTTONS */}
             {!hasImages && (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', width: '100%', paddingBottom: '4px' }}>
                   <button
                     className="btn-camera"
                     style={{
@@ -256,12 +258,8 @@ export default function CreatePost() {
                     Gallery
                   </button>
                 </div>
-              </div>
             )}
-
-            {/* Spacer only when images are present (pushes controls to bottom) */}
-            {hasImages && <div style={{ flex: 1 }} />}
-
+            
             {/* 3. BUNDLED CONTROLS AT BOTTOM */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '16px' }}>
               
