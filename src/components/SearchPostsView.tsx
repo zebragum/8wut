@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { ApiPost } from '../api/posts';
 import { searchPosts } from '../api/posts';
 import { searchUsers } from '../api/users';
@@ -6,13 +6,22 @@ import type { ApiUser } from '../api/auth';
 import PostCard from './PostCard';
 import toast from 'react-hot-toast';
 
-export default function SearchPostsView() {
+interface SearchPostsViewProps {
+  initialTab?: 'posts' | 'users';
+}
+
+export default function SearchPostsView({ initialTab = 'posts' }: SearchPostsViewProps) {
   const [query, setQuery] = useState('');
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [activeTab, setActiveTab] = useState<'posts' | 'users'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'users'>(initialTab);
+
+  // Update active tab if initialTab changes (e.g. via navigation event)
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
   
   // Debounce ref
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

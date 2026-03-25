@@ -18,6 +18,7 @@ function AppShell() {
   const [currentView, setCurrentView] = useState('feed');
   const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
   const [currentPostId, setCurrentPostId] = useState<string | null>(null);
+  const [initialSearchTab, setInitialSearchTab] = useState<'posts' | 'users'>('posts');
   const [globalTheme, setGlobalTheme] = useState(localStorage.getItem('8wut-theme') || 'theme-grass');
 
   useEffect(() => {
@@ -48,6 +49,9 @@ function AppShell() {
         } else if (customEvent.detail.view === 'post' && customEvent.detail.postId) {
           setCurrentPostId(customEvent.detail.postId);
           setCurrentView('post');
+        } else if (customEvent.detail.view === 'search') {
+          setInitialSearchTab(customEvent.detail.tab || 'posts');
+          setCurrentView('search');
         } else {
           setCurrentView(customEvent.detail.view);
         }
@@ -108,7 +112,7 @@ function AppShell() {
         {currentView === 'notifications' && <NotificationsView />}
         {currentView === 'profile' && <ProfileView userId={currentProfileId} />}
         {currentView === 'admin' && currentUser.is_admin && <AdminView />}
-        {currentView === 'search' && <SearchPostsView />}
+        {currentView === 'search' && <SearchPostsView initialTab={initialSearchTab} />}
         {currentView === 'post' && currentPostId && <PostDetailView postId={currentPostId} />}
       </main>
       <BottomNav currentView={currentView} onViewChange={setCurrentView} />
