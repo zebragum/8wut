@@ -205,10 +205,10 @@ export default function CreatePost() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', height: '100%' }}>
             
-            {/* 2. CAMERA AND GALLERY BUTTONS — centered in available space */}
+            {/* 2. CAMERA AND GALLERY BUTTONS — pushed to bottom of available space */}
             {!hasImages && (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px' }}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', width: '100%' }}>
                   <button
                     className="btn-camera"
                     style={{

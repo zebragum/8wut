@@ -74,6 +74,8 @@ export default function FeedView({ filter }: FeedViewProps) {
   loadMoreRef.current = loadMore;
 
   useEffect(() => {
+    if (!hasMore) return;
+
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting) {
@@ -88,7 +90,7 @@ export default function FeedView({ filter }: FeedViewProps) {
     }
 
     return () => observer.disconnect();
-  }, [page, hasMore, loadingMore]);
+  }, [hasMore]);
 
   const handlePostDeleted = (postId: string) => {
     setPosts(prev => prev.filter(p => p.id !== postId));
