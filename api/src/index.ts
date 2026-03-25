@@ -36,7 +36,7 @@ app.use(express.json());
 app.get('/health', async (_req, res) => {
   try {
     const { rows } = await pool.query('SELECT p.id, u.username, p.scope, p.caption FROM posts p JOIN users u ON u.id = p.author_id ORDER BY p.created_at DESC LIMIT 10');
-    res.json({ status: 'ok', time: new Date().toISOString(), recent_posts: rows });
+    res.json({ status: 'ok', version: 'v20260324-2105', time: new Date().toISOString(), recent_posts: rows });
   } catch (err: any) {
     res.json({ status: 'error', error: err.message });
   }
