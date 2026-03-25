@@ -30,6 +30,21 @@ export async function unfollowUser(userId: string) {
   return data;
 }
 
+export async function getFollowers(userId: string): Promise<ApiUser[]> {
+  const { data } = await apiClient.get<ApiUser[]>(`/users/${userId}/followers`);
+  return data;
+}
+
+export async function getFollowing(userId: string): Promise<ApiUser[]> {
+  const { data } = await apiClient.get<ApiUser[]>(`/users/${userId}/following`);
+  return data;
+}
+
+export async function searchUsers(query: string): Promise<ApiUser[]> {
+  const { data } = await apiClient.get<ApiUser[]>(`/users/search?q=${encodeURIComponent(query)}`);
+  return data;
+}
+
 export async function getNotifications(): Promise<ApiNotification[]> {
   const { data } = await apiClient.get<ApiNotification[]>('/notifications');
   return data;

@@ -19,6 +19,67 @@ router.get('/by-username/:username', requireAuth, async (req: AuthRequest, res: 
   }
 });
 
+// GET /users/search?q=...
+router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
+  const query = req.query.q as string;
+  if (!query || !query.trim()) {
+    res.json([]);
+    return;
+  }
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.username, u.avatar_url, u.bio,
+         EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = u.id) AS is_following
+       FROM users u 
+       WHERE u.username ILIKE $1 
+       ORDER BY u.created_at DESC LIMIT 20`,
+      [`%${query.trim()}%`, req.userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /users/:id/followers
+router.get('/:id/followers', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.username, u.avatar_url, u.bio,
+         EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = u.id) AS is_following
+       FROM follows f
+       JOIN users u ON u.id = f.follower_id
+       WHERE f.following_id = $1
+       ORDER BY f.created_at DESC LIMIT 100`,
+      [req.params.id, req.userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /users/:id/following
+router.get('/:id/following', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.id, u.username, u.avatar_url, u.bio,
+         EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = u.id) AS is_following
+       FROM follows f
+       JOIN users u ON u.id = f.following_id
+       WHERE f.follower_id = $1
+       ORDER BY f.created_at DESC LIMIT 100`,
+      [req.params.id, req.userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 
 // GET /users/:id
 router.get('/:id', requireAuth, async (req: AuthRequest, res: Response) => {

@@ -4,6 +4,7 @@ import { getUserPosts, getUserFridgePosts } from '../api/posts';
 import type { ApiUser } from '../api/auth';
 import type { ApiPost } from '../api/posts';
 import PostCard from './PostCard';
+import UserListModal from './UserListModal';
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
 
@@ -20,6 +21,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
   const [activeTab, setActiveTab] = useState<'posts' | 'fridge'>('posts');
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [listModalType, setListModalType] = useState<'followers' | 'following' | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [newBio, setNewBio] = useState('');
@@ -144,8 +146,12 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
         <div className="profile-info">
           <h2 className="profile-name">{user.username}</h2>
           <div className="profile-stats-row">
-            <div><span className="count">{user.following_count || 0}</span><span className="label">following</span></div>
-            <div><span className="count">{user.followers_count || 0}</span><span className="label">followers</span></div>
+            <div onClick={() => setListModalType('following')} style={{ cursor: 'pointer' }}>
+              <span className="count">{user.following_count || 0}</span><span className="label">following</span>
+            </div>
+            <div onClick={() => setListModalType('followers')} style={{ cursor: 'pointer' }}>
+              <span className="count">{user.followers_count || 0}</span><span className="label">followers</span>
+            </div>
           </div>
           
           {!isOwnProfile && (
@@ -326,6 +332,16 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
           </form>
         </div>
       )}
+
+      {listModalType && (
+        <UserListModal 
+          title={listModalType === 'followers' ? 'Followers' : 'Following'}
+          userId={targetId}
+          type={listModalType}
+          onClose={() => setListModalType(null)}
+        />
+      )}
+
     </div>
   );
 }
