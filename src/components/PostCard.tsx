@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ApiPost } from '../api/posts';
-import { likePost, unlikePost, saveToFridge, removeFromFridge, updatePost, deletePost } from '../api/posts';
+import { likePost, unlikePost, saveToFridge, removeFromFridge, updatePost, deletePost, reportPost } from '../api/posts';
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
 import CommentSheet from './CommentSheet';
@@ -84,6 +84,20 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
       toast.success('Post deleted');
     } catch {
       toast.error('Could not delete post');
+    }
+  };
+
+  const [showActionMenu, setShowActionMenu] = useState(false);
+  const handleReport = async () => {
+    setShowActionMenu(false);
+    if (!confirm('Report this post for inappropriate content?')) return;
+    try {
+      await reportPost(post.id);
+      toast.success('Post reported. It will be reviewed.');
+      // Optimistically hide it from their view immediately
+      onDeleted?.(post.id);
+    } catch {
+      toast.error('Could not report post');
     }
   };
 
@@ -219,14 +233,34 @@ export default function PostCard({ post: initialPost, onDeleted, onUpdated }: Po
             </button>
           </div>
 
-          {isOwner && !isEditing && (
-            <button
-              className="edit-link-white"
-              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'white', opacity: 0.8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', padding: '4px 8px' }}
-              onClick={() => setIsEditing(true)}
-            >
-              Edit
-            </button>
+          {!isEditing && (
+            <div style={{ marginLeft: 'auto', position: 'relative' }}>
+              {isOwner ? (
+                <button
+                  className="edit-link-white"
+                  style={{ background: 'none', border: 'none', color: 'white', opacity: 0.8, fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', padding: '4px 8px' }}
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit
+                </button>
+              ) : (
+                <>
+                  <button onClick={() => setShowActionMenu(!showActionMenu)} style={{ background: 'none', border: 'none', color: 'white', opacity: 0.8, cursor: 'pointer', fontSize: '1.2rem', padding: '0 8px', letterSpacing: '2px', outline: 'none' }}>
+                    •••
+                  </button>
+                  {showActionMenu && (
+                    <>
+                      <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setShowActionMenu(false)} />
+                      <div style={{ position: 'absolute', right: 0, top: '100%', background: 'rgb(30, 30, 40)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', zIndex: 100, overflow: 'hidden', minWidth: '140px', boxShadow: '0 8px 16px rgba(0,0,0,0.5)' }}>
+                        <button onClick={handleReport} style={{ width: '100%', padding: '12px 16px', color: '#ff4444', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                          Report Post
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
           )}
         </div>
 

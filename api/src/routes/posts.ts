@@ -51,7 +51,7 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
     const { rows } = await pool.query(
       `SELECT p.id FROM posts p
        WHERE p.author_id IN (SELECT following_id FROM follows WHERE follower_id = $1)
-       AND p.scope != 'private'
+       AND p.scope != 'private' AND p.is_reported = FALSE
        ORDER BY p.created_at DESC
        LIMIT 50`,
       [req.userId]
@@ -90,7 +90,7 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
     const safeLimit = Math.min(Math.max(1, limit), 50);
 
     const { rows } = await pool.query(
-      `SELECT id FROM posts WHERE scope = 'everyone' ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      `SELECT id FROM posts WHERE scope = 'everyone' AND is_reported = FALSE ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [safeLimit, offset]
     );
     const chunkedFetchAll = async (ids: string[], limit: number) => {
@@ -130,7 +130,7 @@ router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
     const { rows } = await pool.query(
       `SELECT p.id FROM posts p
        JOIN users u ON u.id = p.author_id
-       WHERE p.scope = 'everyone' 
+       WHERE p.scope = 'everyone' AND p.is_reported = FALSE 
        AND (${conditions.join(' AND ')})
        ORDER BY p.created_at DESC 
        LIMIT 50`,
@@ -266,6 +266,24 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
     );
     if (!rowCount) {
       res.status(404).json({ error: 'Post not found or not yours' });
+      return;
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// POST /posts/:id/report
+router.post('/:id/report', requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { rowCount } = await pool.query(
+      'UPDATE posts SET is_reported = true WHERE id = $1',
+      [req.params.id as string]
+    );
+    if (!rowCount) {
+      res.status(404).json({ error: 'Post not found' });
       return;
     }
     res.json({ success: true });

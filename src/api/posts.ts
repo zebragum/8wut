@@ -60,8 +60,12 @@ export async function updatePost(id: string, caption: string, created_at?: strin
   return data;
 }
 
-export async function deletePost(id: string): Promise<void> {
-  await apiClient.delete(`/posts/${id}`);
+export async function deletePost(postId: string): Promise<void> {
+  await apiClient.delete(`/posts/${postId}`);
+}
+
+export async function reportPost(postId: string): Promise<void> {
+  await apiClient.post(`/posts/${postId}/report`);
 }
 
 export async function likePost(id: string) {

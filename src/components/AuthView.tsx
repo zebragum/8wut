@@ -20,6 +20,9 @@ export default function AuthView() {
   const [showInstallStep, setShowInstallStep] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState('theme-grass');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  
+  const [showTOS, setShowTOS] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
@@ -309,9 +312,53 @@ export default function AuthView() {
         </div>
       </form>
 
-      <p style={{ marginTop: '24px', opacity: 0.5, fontSize: '0.8rem', maxWidth: '300px', textAlign: 'center' }}>
-        8wut — Community food photojournaling for the people who love to eat.
+      <p style={{ marginTop: '24px', opacity: 0.6, fontSize: '0.8rem', maxWidth: '300px', textAlign: 'center', lineHeight: 1.5 }}>
+        8wut — Community food photojournaling.<br/>
+        By signing up, you agree to our <button type="button" onClick={() => setShowTOS(true)} style={{ background: 'none', border: 'none', color: 'lightblue', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>Terms of Service</button> and <button type="button" onClick={() => setShowPrivacy(true)} style={{ background: 'none', border: 'none', color: 'lightblue', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}>Privacy Policy</button>.
       </p>
+
+      {/* TOS Modal */}
+      {showTOS && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={() => setShowTOS(false)}>
+          <div style={{ background: 'var(--color-skyblue)', padding: '24px', borderRadius: '16px', maxWidth: '400px', width: '100%', maxHeight: '80vh', overflowY: 'auto', color: 'white' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0 }}>Terms of Service</h2>
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.5 }}>
+              Welcome to 8wut. By using our app, you agree to these terms:
+              <br/><br/>
+              <strong>1. Content Guidelines:</strong> You may not post illegal, hateful, or explicit content. All food photos must actually be food (mostly).
+              <br/><br/>
+              <strong>2. Moderation:</strong> We reserve the right to remove any content or suspend any account at our sole discretion, without prior notice.
+              <br/><br/>
+              <strong>3. License:</strong> You retain ownership of your photos, but grant us a license to display them within the app.
+              <br/><br/>
+              <strong>4. Liability:</strong> The app is provided "as is" without warranties. We are not responsible for user-generated content.
+            </p>
+            <button onClick={() => setShowTOS(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--color-orange)', border: 'none', color: 'white', fontWeight: 'bold', marginTop: '16px', cursor: 'pointer' }}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Privacy Modal */}
+      {showPrivacy && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }} onClick={() => setShowPrivacy(false)}>
+          <div style={{ background: 'var(--color-skyblue)', padding: '24px', borderRadius: '16px', maxWidth: '400px', width: '100%', maxHeight: '80vh', overflowY: 'auto', color: 'white' }} onClick={e => e.stopPropagation()}>
+            <h2 style={{ marginTop: 0 }}>Privacy Policy</h2>
+            <p style={{ fontSize: '0.9rem', lineHeight: 1.5 }}>
+              Your privacy is important to us.
+              <br/><br/>
+              <strong>1. Data Collection:</strong> We collect only your username, hashed password, and the photos/captions you explicitly upload. We do not track your location or sell your data.
+              <br/><br/>
+              <strong>2. Cookies:</strong> We use local storage purely to keep you logged in and remember your theme.
+              <br/><br/>
+              <strong>3. Third Parties:</strong> Uploaded images may be hosted via secure third-party CDNs. 
+              <br/><br/>
+              <strong>4. Deletion:</strong> You can permanently delete any of your posts at any time. Account deletion requests can be handled by contacting the admin.
+            </p>
+            <button onClick={() => setShowPrivacy(false)} style={{ width: '100%', padding: '12px', borderRadius: '8px', background: 'var(--color-orange)', border: 'none', color: 'white', fontWeight: 'bold', marginTop: '16px', cursor: 'pointer' }}>Close</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

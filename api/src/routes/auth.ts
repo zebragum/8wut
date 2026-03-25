@@ -167,4 +167,18 @@ router.post('/change-password', requireAuth, async (req: AuthRequest, res: Respo
   }
 });
 
+// GET /auth/migrate-reports (Temporary)
+router.get('/migrate-reports', requireAuth, async (req: AuthRequest, res: Response) => {
+  if (!req.isAdmin) {
+    res.status(403).json({ error: 'Admin only' });
+    return;
+  }
+  try {
+    await pool.query('ALTER TABLE posts ADD COLUMN IF NOT EXISTS is_reported BOOLEAN DEFAULT FALSE');
+    res.json({ success: true, message: 'Migration applied!' });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
