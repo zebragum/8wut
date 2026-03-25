@@ -8,7 +8,14 @@ export default function BottomNav({ currentView, onViewChange }: BottomNavProps)
     <nav className="bottom-nav">
       <button 
         className={`nav-item ${currentView === 'feed' ? 'active' : ''}`}
-        onClick={() => onViewChange('feed')}
+        onClick={() => {
+          if (currentView === 'feed') {
+            // Already on feed — scroll to top
+            document.querySelector('.main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            onViewChange('feed');
+          }
+        }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
           {/* Home/House Icon */}

@@ -3,6 +3,7 @@ import { useAuth } from '../AuthContext';
 import Logo from './Logo';
 import toast from 'react-hot-toast';
 import { usePushNotifications } from '../utils/usePushNotifications';
+import { getUnreadCount } from '../api/users';
 
 interface TopBarProps {
   currentView: string;
@@ -14,6 +15,7 @@ export default function TopBar({ currentView }: TopBarProps) {
   const [isFood, setIsFood] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Settings form state
   const [newPassword, setNewPassword] = useState('');
@@ -45,6 +47,14 @@ export default function TopBar({ currentView }: TopBarProps) {
       setIsFood(true);
       setTimeout(() => setIsFood(false), 1000);
     }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch unread notification count on mount and periodically
+  useEffect(() => {
+    const fetchCount = () => getUnreadCount().then(setUnreadCount).catch(() => {});
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -133,8 +143,8 @@ export default function TopBar({ currentView }: TopBarProps) {
             padding: '0', minWidth: '180px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
             zIndex: 100, overflow: 'hidden'
           }}>
-            <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications' })); }}>Notifications</button>
-            <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'search' })); }}>Search Posts</button>
+            <button className="dropdown-item" onClick={() => { setShowMenu(false); setUnreadCount(0); window.dispatchEvent(new CustomEvent('navigate', { detail: 'notifications' })); }}>Notifications{unreadCount > 0 ? ` (${unreadCount})` : ''}</button>
+            <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'search' })); }}>Search</button>
             <button className="dropdown-item" onClick={() => { setShowMenu(false); setShowSettings(true); }}>Settings</button>
             {currentUser?.is_admin && (
               <button className="dropdown-item" onClick={() => { setShowMenu(false); window.dispatchEvent(new CustomEvent('navigate', { detail: 'admin' })); }}>Admin Panel</button>
