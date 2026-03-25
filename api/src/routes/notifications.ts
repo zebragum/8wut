@@ -35,6 +35,7 @@ router.get('/', requireAuth, async (req: AuthRequest, res: Response) => {
       read: r.read,
       timestamp: r.created_at,
       user: { id: r.actor_id, username: r.actor_username, avatarUrl: r.actor_avatar },
+      postId: r.post_id || null,
       postImage: r.post_image
     })));
   } catch (err) {

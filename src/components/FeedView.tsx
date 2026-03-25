@@ -20,7 +20,6 @@ export default function FeedView({ filter }: FeedViewProps) {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const observerTarget = useRef<HTMLDivElement>(null);
 
   const loadPosts = useCallback(async () => {
     if (!currentUser) return;
@@ -69,36 +68,28 @@ export default function FeedView({ filter }: FeedViewProps) {
     }
   }, [currentUser, loadingMore, hasMore, filter, page]);
 
-  // Keep a ref to the latest loadMore so the observer never calls a stale version
+  // Keep a ref to the latest loadMore so the scroll handler never calls a stale version
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
 
-  // Re-observe after every state change so the observer re-fires even if the
-  // sentinel never left the viewport (which was the bug capping at 20 posts).
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
+  // SCROLL-EVENT BASED infinite scroll (replaces IntersectionObserver which deadlocked)
   useEffect(() => {
-    if (!hasMore) return;
+    const scrollContainer = document.querySelector('.main-content');
+    if (!scrollContainer) return;
 
-    // Disconnect any previous observer
-    observerRef.current?.disconnect();
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      if (scrollHeight - scrollTop - clientHeight < 800) {
+        loadMoreRef.current();
+      }
+    };
 
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting && !loadingMore) {
-          loadMoreRef.current();
-        }
-      },
-      { rootMargin: '800px' }
-    );
-    observerRef.current = observer;
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    // Also check immediately in case content is shorter than viewport
+    handleScroll();
 
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loadingMore, page]);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+  }, [page, hasMore, loadingMore]);
 
   const handlePostDeleted = (postId: string) => {
     setPosts(prev => prev.filter(p => p.id !== postId));
@@ -254,20 +245,15 @@ export default function FeedView({ filter }: FeedViewProps) {
         </div>
       )}
       
-      {/* Infinite Scroll Observer Target */}
-      {/* Infinite Scroll Observer Target - always render to protect the ref binding */}
-      <div 
-        ref={observerTarget}
-        style={{ 
-          height: '40px', 
-          display: (!loading && hasMore && filter !== 'fridge' && posts.length > 0) ? 'flex' : 'none', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          margin: '20px 0' 
-        }}
-      >
-        {loadingMore && <div style={{ width: '24px', height: '24px', border: '3px solid var(--color-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />}
-      </div>
+      {/* Scroll-based loading indicator */}
+      {loadingMore && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
+          <div style={{ width: '24px', height: '24px', border: '3px solid var(--color-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        </div>
+      )}
+      {!hasMore && posts.length > 0 && (
+        <div style={{ textAlign: 'center', padding: '20px', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem' }}>You've reached the beginning of time 🕰️</div>
+      )}
     </div>
   );
 }

@@ -34,6 +34,11 @@ export async function getDiscoveryFeed(limit = 50, offset = 0): Promise<ApiPost[
   return data;
 }
 
+export async function getPost(postId: string): Promise<ApiPost> {
+  const { data } = await apiClient.get<ApiPost>(`/posts/${postId}`);
+  return data;
+}
+
 export async function getUserPosts(userId: string): Promise<ApiPost[]> {
   const { data } = await apiClient.get<ApiPost[]>(`/posts/user/${userId}`);
   return data;

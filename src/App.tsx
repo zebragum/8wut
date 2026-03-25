@@ -9,6 +9,7 @@ import NotificationsView from './components/NotificationsView';
 import AuthView from './components/AuthView';
 import AdminView from './components/AdminView';
 import SearchPostsView from './components/SearchPostsView';
+import PostDetailView from './components/PostDetailView';
 import { AuthProvider, useAuth } from './AuthContext';
 import './index.css';
 
@@ -16,6 +17,7 @@ function AppShell() {
   const { currentUser, loading } = useAuth();
   const [currentView, setCurrentView] = useState('feed');
   const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
+  const [currentPostId, setCurrentPostId] = useState<string | null>(null);
   const [globalTheme, setGlobalTheme] = useState(localStorage.getItem('8wut-theme') || 'theme-grass');
 
   useEffect(() => {
@@ -43,6 +45,9 @@ function AppShell() {
             setCurrentProfileId(null);
             setCurrentView('profile');
           }
+        } else if (customEvent.detail.view === 'post' && customEvent.detail.postId) {
+          setCurrentPostId(customEvent.detail.postId);
+          setCurrentView('post');
         } else {
           setCurrentView(customEvent.detail.view);
         }
@@ -104,6 +109,7 @@ function AppShell() {
         {currentView === 'profile' && <ProfileView userId={currentProfileId} />}
         {currentView === 'admin' && currentUser.is_admin && <AdminView />}
         {currentView === 'search' && <SearchPostsView />}
+        {currentView === 'post' && currentPostId && <PostDetailView postId={currentPostId} />}
       </main>
       <BottomNav currentView={currentView} onViewChange={setCurrentView} />
     </div>

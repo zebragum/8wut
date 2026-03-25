@@ -12,6 +12,7 @@ export default function SearchPostsView() {
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'users'>('posts');
   
   // Debounce ref
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,6 +60,10 @@ export default function SearchPostsView() {
     setPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p));
   };
 
+  const handleUserClick = (userId: string) => {
+    window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId } }));
+  };
+
   return (
     <div className="search-posts-view" style={{ padding: '0 0 100px 0', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
       
@@ -68,7 +73,7 @@ export default function SearchPostsView() {
           type="text" 
           value={query}
           onChange={handleSearchChange}
-          placeholder="Search posts..."
+          placeholder="Search..."
           autoFocus
           style={{
             width: '100%', padding: '14px 20px', borderRadius: '24px', border: 'none',
@@ -78,6 +83,32 @@ export default function SearchPostsView() {
         />
       </div>
 
+      {/* Tabs */}
+      {hasSearched && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', padding: '0 16px 12px' }}>
+          <button 
+            onClick={() => setActiveTab('posts')}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '12px', border: 'none',
+              background: activeTab === 'posts' ? 'var(--color-orange)' : 'rgba(255,255,255,0.1)',
+              color: 'white', fontWeight: 'bold', fontFamily: 'inherit', cursor: 'pointer', fontSize: '0.95rem'
+            }}
+          >
+            Posts {posts.length > 0 && `(${posts.length})`}
+          </button>
+          <button 
+            onClick={() => setActiveTab('users')}
+            style={{
+              flex: 1, padding: '10px', borderRadius: '12px', border: 'none',
+              background: activeTab === 'users' ? 'var(--color-lavender)' : 'rgba(255,255,255,0.1)',
+              color: 'white', fontWeight: 'bold', fontFamily: 'inherit', cursor: 'pointer', fontSize: '0.95rem'
+            }}
+          >
+            Users {users.length > 0 && `(${users.length})`}
+          </button>
+        </div>
+      )}
+
       {/* Results Area */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: 'white', opacity: 0.7 }}>Searching...</div>
@@ -86,43 +117,57 @@ export default function SearchPostsView() {
           <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🧐</div>
           <p style={{ fontSize: '1.2rem' }}>No matches found for "{query}"</p>
         </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          
-          {/* Horizontal Users List */}
-          {users.length > 0 && (
-            <div className="hide-scroll" style={{ 
-              display: 'flex', overflowX: 'auto', gap: '16px', padding: '16px', 
-              borderBottom: posts.length > 0 ? '1px solid rgba(255,255,255,0.1)' : 'none'
-            }}>
-              {users.map((u: any) => (
-                <div 
-                  key={u.id} 
-                  onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: u.id } }))}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0, width: '72px' }}
-                >
-                  <img src={u.avatar_url || u.avatarUrl} alt="" style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-lavender)' }} />
-                  <span style={{ fontSize: '0.75rem', color: 'white', fontWeight: '500', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.username}</span>
-                </div>
-              ))}
-            </div>
+      ) : hasSearched ? (
+        <>
+          {/* POSTS TAB */}
+          {activeTab === 'posts' && (
+            posts.length > 0 ? (
+              <div className="feed-view-list" style={{ marginTop: '8px' }}>
+                {posts.map(post => (
+                  <PostCard 
+                    key={post.id} 
+                    post={post} 
+                    onDeleted={handlePostDeleted}
+                    onUpdated={handlePostUpdated}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>No posts found for "{query}"</div>
+            )
           )}
 
-          {/* Posts Grid */}
-          {posts.length > 0 && (
-            <div className="feed-view-list" style={{ marginTop: '8px' }}>
-              {posts.map(post => (
-                <PostCard 
-                  key={post.id} 
-                  post={post} 
-                  onDeleted={handlePostDeleted}
-                  onUpdated={handlePostUpdated}
-                />
-              ))}
-            </div>
+          {/* USERS TAB */}
+          {activeTab === 'users' && (
+            users.length > 0 ? (
+              <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {users.map((u: any) => (
+                  <div 
+                    key={u.id} 
+                    onClick={() => handleUserClick(u.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer',
+                      background: 'rgba(255,255,255,0.08)', padding: '14px', borderRadius: '16px',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <img src={u.avatar_url || u.avatarUrl} alt="" style={{ width: '52px', height: '52px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-lavender)' }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 'bold', color: 'white', fontSize: '1rem' }}>{u.username}</div>
+                      {u.bio && <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.bio}</div>}
+                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px', color: 'rgba(255,255,255,0.5)' }}>No users found for "{query}"</div>
+            )
           )}
-        </div>
-      )}
+        </>
+      ) : null}
 
       {/* Helper text when empty */}
       {!hasSearched && !loading && (

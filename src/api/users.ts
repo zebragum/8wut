@@ -7,6 +7,7 @@ export interface ApiNotification {
   read: boolean;
   timestamp: string;
   user: { id: string; username: string; avatarUrl: string };
+  postId?: string;
   postImage?: string;
 }
 

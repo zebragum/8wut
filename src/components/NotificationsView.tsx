@@ -54,6 +54,13 @@ export default function NotificationsView() {
           notifications.map(notif => (
             <div
               key={notif.id}
+              onClick={() => {
+                if (notif.type === 'follow') {
+                  window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: notif.user.id } }));
+                } else if (notif.postId) {
+                  window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'post', postId: notif.postId } }));
+                }
+              }}
               style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
                 background: notif.read
@@ -65,14 +72,14 @@ export default function NotificationsView() {
                 padding: '14px',
                 boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
                 border: `1px solid rgba(255,255,255,${notif.read ? '0.1' : '0.3'})`,
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                cursor: 'pointer'
               }}
             >
               <img
                 src={notif.user.avatarUrl}
                 alt={notif.user.username}
-                style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', flexShrink: 0, cursor: 'pointer' }}
-                onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: { view: 'profile', userId: notif.user.id } }))}
+                style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', flexShrink: 0 }}
               />
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <span style={{ color: 'white', lineHeight: 1.4, fontSize: '0.9rem', textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}>
