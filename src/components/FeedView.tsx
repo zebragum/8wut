@@ -73,24 +73,32 @@ export default function FeedView({ filter }: FeedViewProps) {
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
 
+  // Re-observe after every state change so the observer re-fires even if the
+  // sentinel never left the viewport (which was the bug capping at 20 posts).
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
   useEffect(() => {
     if (!hasMore) return;
 
+    // Disconnect any previous observer
+    observerRef.current?.disconnect();
+
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting) {
+        if (entries[0].isIntersecting && !loadingMore) {
           loadMoreRef.current();
         }
       },
       { rootMargin: '800px' }
     );
+    observerRef.current = observer;
 
     if (observerTarget.current) {
       observer.observe(observerTarget.current);
     }
 
     return () => observer.disconnect();
-  }, [hasMore]);
+  }, [hasMore, loadingMore, page]);
 
   const handlePostDeleted = (postId: string) => {
     setPosts(prev => prev.filter(p => p.id !== postId));
