@@ -36,9 +36,9 @@ router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
       [`%${query.trim()}%`, req.userId]
     );
     res.json(rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+  } catch (err: any) {
+    console.error('User search error:', err);
+    res.status(500).json({ error: 'Server error', details: err.message, query: req.query.q, userId: req.userId });
   }
 });
 
