@@ -28,12 +28,15 @@ export default function SearchPostsView() {
     setLoading(true);
     setHasSearched(true);
     try {
-      const [postData, userData] = await Promise.all([
+      // Run both searches independently so one failure doesn't kill the other
+      const [postResult, userResult] = await Promise.allSettled([
         searchPosts(searchQuery),
         searchUsers(searchQuery)
       ]);
-      setPosts(postData);
-      setUsers(userData);
+      setPosts(postResult.status === 'fulfilled' ? postResult.value : []);
+      setUsers(userResult.status === 'fulfilled' ? userResult.value : []);
+      if (postResult.status === 'rejected') console.error('Post search failed:', postResult.reason);
+      if (userResult.status === 'rejected') console.error('User search failed:', userResult.reason);
     } catch (err: any) {
       const msg = err.response?.data?.error || err.response?.data?.details || 'Search failed';
       toast.error(msg);
