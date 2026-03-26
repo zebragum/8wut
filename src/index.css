@@ -362,6 +362,7 @@ h1, h2, h3, h4, h5, p {
   flex-direction: column;
   gap: 4px;
   align-items: center !important;
+  min-width: 0;
 }
 
 .profile-name {
@@ -370,6 +371,9 @@ h1, h2, h3, h4, h5, p {
   margin: 0;
   line-height: 1.1;
   font-family: 'Cooper Black', 'Fredoka One', cursive; /* Match logo/premium feel */
+  word-break: break-all;
+  overflow-wrap: break-word;
+  text-align: center;
 }
 
 .profile-handle {
@@ -384,8 +388,8 @@ h1, h2, h3, h4, h5, p {
   font-weight: 600;
   margin-bottom: 4px;
   display: flex;
-  flex-direction: column; /* Stack stats vertically */
-  gap: 4px; /* Slightly tighter gap for vertical rows */
+  flex-direction: row; /* Stack stats horizontally to prevent '01' vertical misread */
+  gap: 16px; /* Spacing between following and followers */
   justify-content: center;
   align-items: center; /* Center each row */
 }
