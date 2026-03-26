@@ -85,7 +85,7 @@ export default function SearchPostsView({ initialTab = 'posts' }: SearchPostsVie
     <div className="search-posts-view" style={{ padding: '0 0 100px 0', width: '100%', maxWidth: '600px', margin: '0 auto' }}>
       
       {/* Search Input Header */}
-      <div style={{ padding: '16px', position: 'sticky', top: '130px', zIndex: 50 }}>
+      <div style={{ padding: '16px', position: 'sticky', top: '0px', zIndex: 50, backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', background: 'rgba(0,0,0,0.2)' }}>
         <input 
           type="text" 
           value={query}
