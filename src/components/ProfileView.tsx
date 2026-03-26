@@ -8,6 +8,15 @@ import UserListModal from './UserListModal';
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
 
+const getUsernameFontSize = (name: string) => {
+  if (!name) return '2.2rem';
+  const len = name.length;
+  if (len > 20) return '1.4rem';
+  if (len > 15) return '1.7rem';
+  if (len > 10) return '2.0rem';
+  return '2.2rem';
+};
+
 export default function ProfileView({ userId }: { userId?: string | null }) {
   const { currentUser, updateUsername, updateAvatar } = useAuth();
   const targetId = userId || currentUser?.id || '';
@@ -144,7 +153,9 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
         </div>
 
         <div className="profile-info">
-          <h2 className="profile-name">{user.username}</h2>
+          <h2 className="profile-name" style={{ fontSize: getUsernameFontSize(user.username) }}>
+            {user.username}
+          </h2>
           <div className="profile-stats-row">
             <div onClick={() => setListModalType('following')} style={{ cursor: 'pointer' }}>
               <span className="count">{user.following_count || 0}</span><span className="label">following</span>
@@ -299,7 +310,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
             <h3 style={{ margin: 0, color: 'white', textAlign: 'center' }}>Edit Profile</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', paddingLeft: '4px' }}>Username</label>
-              <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)} placeholder="New username" style={{ padding: '12px', borderRadius: '8px', border: 'none', fontFamily: 'inherit', fontSize: '1rem' }} />
+              <input type="text" value={newUsername} onChange={e => setNewUsername(e.target.value)} maxLength={25} placeholder="New username" style={{ padding: '12px', borderRadius: '8px', border: 'none', fontFamily: 'inherit', fontSize: '1rem' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', paddingLeft: '4px' }}>Bio</label>

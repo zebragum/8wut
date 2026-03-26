@@ -264,6 +264,7 @@ export default function AuthView() {
           autoCapitalize="none"
           autoCorrect="off"
           disabled={loading}
+          maxLength={25}
         />
 
         <input

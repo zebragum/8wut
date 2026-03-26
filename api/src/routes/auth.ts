@@ -26,6 +26,10 @@ router.post('/register', async (req: Request, res: Response) => {
     res.status(400).json({ error: 'Username cannot contain spaces' });
     return;
   }
+  if (username.trim().length > 25) {
+    res.status(400).json({ error: 'Username must be 25 characters or less' });
+    return;
+  }
 
   const client = await pool.connect();
   try {

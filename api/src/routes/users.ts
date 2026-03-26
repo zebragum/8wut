@@ -125,6 +125,10 @@ router.patch('/me', requireAuth, async (req: AuthRequest, res: Response) => {
       res.status(400).json({ error: 'Username cannot contain spaces' });
       return;
     }
+    if (username.trim().length > 25) {
+      res.status(400).json({ error: 'Username must be 25 characters or less' });
+      return;
+    }
     // Check uniqueness
     const { rows: [existing] } = await pool.query(
       'SELECT id FROM users WHERE lower(username) = lower($1) AND id != $2',
