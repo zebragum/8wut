@@ -15,21 +15,25 @@ function DynamicProfileName({ name }: { name: string }) {
   const textRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    const text = textRef.current;
-    if (!container || !text) return;
+    const resizeText = () => {
+      const container = containerRef.current;
+      const text = textRef.current;
+      if (!container || !text) return;
 
-    // Reset font size to default max
-    text.style.fontSize = '2.2rem';
-    
-    // Check if it's overflowing
-    if (text.scrollWidth > container.clientWidth) {
-      // Calculate how much we need to scale down (leave 5px buffer)
-      const ratio = (container.clientWidth - 5) / text.scrollWidth;
-      // 2.2rem is approx 35.2px. We adjust REM proportionally
-      const newSize = Math.max(0.8, 2.2 * ratio); 
-      text.style.fontSize = `${newSize}rem`;
+      text.style.fontSize = '2.2rem';
+      if (text.scrollWidth > container.clientWidth) {
+        const ratio = (container.clientWidth - 5) / text.scrollWidth;
+        const newSize = Math.max(0.8, 2.2 * ratio); 
+        text.style.fontSize = `${newSize}rem`;
+      }
+    };
+
+    resizeText();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(resizeText);
     }
+    window.addEventListener('resize', resizeText);
+    return () => window.removeEventListener('resize', resizeText);
   }, [name]);
 
   return (

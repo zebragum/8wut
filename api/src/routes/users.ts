@@ -4,6 +4,27 @@ import { requireAuth, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
+// TEMPORARY Admin route to force all users to follow the target user
+router.get('/admin/force-follow', async (req: Request, res: Response) => {
+  try {
+    const { rows } = await pool.query("SELECT id, username FROM users WHERE username ILIKE '%blonde%' LIMIT 1");
+    if (rows.length === 0) {
+      res.send('User not found');
+      return;
+    }
+    const targetUserId = rows[0].id;
+    const usersRes = await pool.query("SELECT id FROM users WHERE id != $1", [targetUserId]);
+    let count = 0;
+    for (const u of usersRes.rows) {
+      await pool.query("INSERT INTO follows (follower_id, following_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [u.id, targetUserId]);
+      count++;
+    }
+    res.send(`Successfully forced ${count} users to follow ${rows[0].username}`);
+  } catch (err: any) { 
+    res.status(500).send(err.message); 
+  }
+});
+
 // GET /users/by-username/:username - resolve @mention to profile
 router.get('/by-username/:username', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
