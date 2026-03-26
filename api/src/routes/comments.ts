@@ -54,12 +54,12 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res: Response
         [post.author_id, req.userId, req.params.id]
       );
       // PUSH
-      await sendPushNotification(post.author_id, {
+      sendPushNotification(post.author_id, {
         title: '8wut',
         body: `${user.username} commented on wut u 8`,
         icon: '/icon-192.png',
         data: { url: `/post/${req.params.id}` }
-      });
+      }).catch(e => console.error('Push error:', e));
     }
     res.status(201).json({
       id: comment.id,

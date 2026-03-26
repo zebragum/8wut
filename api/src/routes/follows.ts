@@ -22,12 +22,12 @@ router.post('/:id/follow', requireAuth, async (req: AuthRequest, res: Response) 
     );
     // PUSH
     const { rows: [actor] } = await pool.query('SELECT username FROM users WHERE id = $1', [req.userId]);
-    await sendPushNotification(req.params.id, {
+    sendPushNotification(req.params.id, {
       title: '8wut',
       body: `${actor.username} followed you`,
       icon: '/icon-192.png',
       data: { url: `/profile/${actor.username}` }
-    });
+    }).catch(e => console.error('Push error:', e));
     res.json({ isFollowing: true });
   } catch (err) {
     console.error(err);

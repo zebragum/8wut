@@ -53,8 +53,28 @@ app.use('/notifications', notificationsRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/admin', adminRoutes);
 
-// Migrations should be run manually, not on app start to prevent crash loops
-// pool.query(\`...\`);
+async function applyIndexes() {
+  try {
+    const queries = [
+      'CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC)',
+      'CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id)',
+      'CREATE INDEX IF NOT EXISTS idx_likes_post_id ON likes(post_id)',
+      'CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id)',
+      'CREATE INDEX IF NOT EXISTS idx_comments_post_id ON comments(post_id)',
+      'CREATE INDEX IF NOT EXISTS idx_post_images_post_id ON post_images(post_id)',
+      'CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id)',
+      'CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id)',
+      'CREATE INDEX IF NOT EXISTS idx_fridge_saves_user_id ON fridge_saves(user_id)',
+      'CREATE INDEX IF NOT EXISTS idx_posts_scope_reported ON posts(scope, is_reported)'
+    ];
+    for (const q of queries) await pool.query(q);
+    console.log('[DB] Indexes verified successfully.');
+  } catch (err) {
+    console.error('[DB] Failed to apply indexes', err);
+  }
+}
+// Run non-blocking after 5 seconds to avoid startup crash loops
+setTimeout(applyIndexes, 5000);
 
 app.listen(PORT, () => {
   console.log(`8wut API running on port ${PORT}`);

@@ -22,12 +22,12 @@ router.post('/:id/like', requireAuth, async (req: AuthRequest, res: Response) =>
       );
       // PUSH
       const { rows: [actor] } = await pool.query('SELECT username FROM users WHERE id = $1', [req.userId]);
-      await sendPushNotification(post.author_id, {
+      sendPushNotification(post.author_id, {
         title: '8wut',
         body: `${actor.username} liked wut u 8`,
         icon: '/icon-192.png',
         data: { url: `/post/${req.params.id}` }
-      });
+      }).catch(e => console.error('Push error:', e));
     }
     const { rows: [{ count }] } = await pool.query(
       'SELECT COUNT(*) FROM likes WHERE post_id = $1', [req.params.id]

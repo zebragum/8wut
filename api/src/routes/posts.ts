@@ -238,12 +238,12 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
             );
             // PUSH
             const { rows: [actor] } = await pool.query('SELECT username FROM users WHERE id = $1', [req.userId]);
-            await sendPushNotification(mentioned.id, {
+            sendPushNotification(mentioned.id, {
               title: '8wut',
               body: `${actor.username} @'d you in a post`,
               icon: '/icon-192.png',
               data: { url: `/post/${post.id}` }
-            });
+            }).catch(e => console.error('Push error:', e));
           }
         } catch { /* non-critical — don't fail the post */ }
       }
