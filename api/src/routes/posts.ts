@@ -45,6 +45,53 @@ async function fetchPost(postId: string, viewerId: string) {
   };
 }
 
+// Bulk payload optimized version to prevent N+1 query latency
+async function fetchPosts(postIds: string[], viewerId: string) {
+  if (!postIds || postIds.length === 0) return [];
+  const { rows } = await pool.query(
+      `SELECT
+       p.id, p.caption, p.text_background, p.scope, p.created_at,
+       u.id AS author_id, u.username AS author_username, u.avatar_url AS author_avatar,
+       (SELECT COUNT(*) FROM likes WHERE post_id = p.id) AS likes_count,
+       EXISTS(SELECT 1 FROM follows WHERE follower_id = $2 AND following_id = p.author_id) AS is_following,
+       EXISTS(SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $2) AS has_liked,
+       EXISTS(SELECT 1 FROM fridge_saves WHERE post_id = p.id AND user_id = $2) AS saved_to_fridge,
+       (SELECT COUNT(*) FROM comments WHERE post_id = p.id) AS comments_count,
+       (SELECT json_agg(
+          json_build_object(
+            'id', hc.id,
+            'text', hc.text,
+            'created_at', hc.created_at,
+            'author', json_build_object('id', u2.id, 'username', u2.username, 'avatarUrl', u2.avatar_url)
+          ) ORDER BY hc.created_at ASC
+        ) FROM comments hc JOIN users u2 ON u2.id = hc.author_id WHERE hc.post_id = p.id AND hc.is_hearted = TRUE) AS hearted_comments,
+       (SELECT json_agg(json_build_object('url', pi.url, 'sort_order', pi.sort_order) ORDER BY pi.sort_order)
+        FROM post_images pi WHERE pi.post_id = p.id) AS images
+     FROM posts p
+     JOIN users u ON u.id = p.author_id
+     WHERE p.id = ANY($1::uuid[])`,
+    [postIds, viewerId]
+  );
+  
+  const postMap = new Map();
+  for (const post of rows) {
+    postMap.set(post.id, {
+      ...post,
+      author: { id: post.author_id, username: post.author_username, avatarUrl: post.author_avatar },
+      images: (post.images || []).map((i: { url: string }) => i.url),
+      likes: parseInt(post.likes_count),
+      hasLiked: post.has_liked,
+      savedToFridge: post.saved_to_fridge,
+      commentsCount: parseInt(post.comments_count),
+      heartedComments: post.hearted_comments || [],
+      _isFollowing: post.is_following
+    });
+  }
+  
+  // Return in original requested order
+  return postIds.map(id => postMap.get(id)).filter(Boolean);
+}
+
 // GET /posts/feed - posts from people you follow
 router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
   try {
@@ -56,16 +103,8 @@ router.get('/feed', requireAuth, async (req: AuthRequest, res: Response) => {
        LIMIT 50`,
       [req.userId]
     );
-    const chunkedFetchAll = async (ids: string[], limit: number) => {
-      const results = [];
-      for (let i = 0; i < ids.length; i += limit) {
-        const chunk = ids.slice(i, i + limit);
-        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
-      }
-      return results;
-    };
-    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
-    res.json(posts.filter(Boolean));
+    const posts = await fetchPosts(rows.map(r => r.id), req.userId!);
+    res.json(posts);
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: 'Server error', details: err.message });
@@ -93,16 +132,8 @@ router.get('/discovery', requireAuth, async (req: AuthRequest, res: Response) =>
       `SELECT id FROM posts WHERE scope = 'everyone' AND is_reported = FALSE ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
       [safeLimit, offset]
     );
-    const chunkedFetchAll = async (ids: string[], limit: number) => {
-      const results = [];
-      for (let i = 0; i < ids.length; i += limit) {
-        const chunk = ids.slice(i, i + limit);
-        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
-      }
-      return results;
-    };
-    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
-    res.json(posts.filter(Boolean));
+    const posts = await fetchPosts(rows.map(r => r.id), req.userId!);
+    res.json(posts);
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: 'Server error', details: err.message });
@@ -136,16 +167,8 @@ router.get('/search', requireAuth, async (req: AuthRequest, res: Response) => {
        LIMIT 50`,
       params
     );
-    const chunkedFetchAll = async (ids: string[], limit: number) => {
-      const results = [];
-      for (let i = 0; i < ids.length; i += limit) {
-        const chunk = ids.slice(i, i + limit);
-        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
-      }
-      return results;
-    };
-    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
-    res.json(posts.filter(Boolean));
+    const posts = await fetchPosts(rows.map(r => r.id), req.userId!);
+    res.json(posts);
   } catch (err: any) {
     console.error('Search Error:', err);
     res.status(500).json({ error: 'Search failed', details: err.message });
@@ -300,18 +323,10 @@ router.get('/user/:userId', requireAuth, async (req: AuthRequest, res: Response)
       'SELECT id FROM posts WHERE author_id = $1 ORDER BY created_at DESC',
       [req.params.userId as string]
     );
-    const chunkedFetchAll = async (ids: string[], limit: number) => {
-      const results = [];
-      for (let i = 0; i < ids.length; i += limit) {
-        const chunk = ids.slice(i, i + limit);
-        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
-      }
-      return results;
-    };
-    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
+    const posts = await fetchPosts(rows.map(r => r.id), req.userId!);
     
     // Every post by this user is visible on their profile page
-    const visiblePosts = posts.filter(Boolean).map(p => {
+    const visiblePosts = posts.map(p => {
       const { _isFollowing, ...cleanPost } = p!;
       return cleanPost;
     });
@@ -331,16 +346,8 @@ router.get('/fridge/:userId', requireAuth, async (req: AuthRequest, res: Respons
        WHERE fs.user_id = $1 ORDER BY fs.created_at DESC`,
       [req.params.userId as string]
     );
-    const chunkedFetchAll = async (ids: string[], limit: number) => {
-      const results = [];
-      for (let i = 0; i < ids.length; i += limit) {
-        const chunk = ids.slice(i, i + limit);
-        results.push(...await Promise.all(chunk.map(id => fetchPost(id, req.userId!))));
-      }
-      return results;
-    };
-    const posts = await chunkedFetchAll(rows.map(r => r.id), 5);
-    res.json(posts.filter(Boolean));
+    const posts = await fetchPosts(rows.map(r => r.id), req.userId!);
+    res.json(posts);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
