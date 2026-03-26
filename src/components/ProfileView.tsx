@@ -1,21 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
-import { getUser, followUser, unfollowUser } from '../api/users';
-import { getUserPosts, getUserFridgePosts } from '../api/posts';
-import type { ApiUser } from '../api/auth';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ApiPost } from '../api/posts';
-import PostCard from './PostCard';
+import { getUserPosts, getUserFridgePosts } from '../api/posts';
+import { getUserProfile, uploadImage, updateAvatar, updateProfile, getFollowers, getFollowing } from '../api/users';
+import { followUser, unfollowUser, checkFollowStatus } from '../api/follows';
 import UserListModal from './UserListModal';
+import PostCard from './PostCard';
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
 
-const getUsernameFontSize = (name: string) => {
-  if (!name) return '2.2rem';
-  const len = name.length;
-  if (len > 20) return '1.4rem';
-  if (len > 15) return '1.7rem';
-  if (len > 10) return '2.0rem';
-  return '2.2rem';
-};
+import type { ApiUser } from '../api/auth';
+
+function DynamicProfileName({ name }: { name: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const text = textRef.current;
+    if (!container || !text) return;
+
+    // Reset font size to default max
+    text.style.fontSize = '2.2rem';
+    
+    // Check if it's overflowing
+    if (text.scrollWidth > container.clientWidth) {
+      // Calculate how much we need to scale down (leave 5px buffer)
+      const ratio = (container.clientWidth - 5) / text.scrollWidth;
+      // 2.2rem is approx 35.2px. We adjust REM proportionally
+      const newSize = Math.max(0.8, 2.2 * ratio); 
+      text.style.fontSize = `${newSize}rem`;
+    }
+  }, [name]);
+
+  return (
+    <div ref={containerRef} style={{ width: '100%', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+      <h2 ref={textRef} className="profile-name" style={{ whiteSpace: 'nowrap' }}>
+        {name}
+      </h2>
+    </div>
+  );
+}
 
 export default function ProfileView({ userId }: { userId?: string | null }) {
   const { currentUser, updateUsername, updateAvatar } = useAuth();
@@ -153,9 +177,7 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
         </div>
 
         <div className="profile-info">
-          <h2 className="profile-name" style={{ fontSize: getUsernameFontSize(user.username) }}>
-            {user.username}
-          </h2>
+          <DynamicProfileName name={user.username} />
           <div className="profile-stats-row">
             <div onClick={() => setListModalType('following')} style={{ cursor: 'pointer' }}>
               <span className="count">{user.following_count || 0}</span><span className="label">following</span>
