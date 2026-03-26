@@ -1,14 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { ApiPost } from '../api/posts';
+import { getUser, followUser, unfollowUser } from '../api/users';
 import { getUserPosts, getUserFridgePosts } from '../api/posts';
-import { getUserProfile, uploadImage, updateAvatar, updateProfile, getFollowers, getFollowing } from '../api/users';
-import { followUser, unfollowUser, checkFollowStatus } from '../api/follows';
-import UserListModal from './UserListModal';
+import type { ApiUser } from '../api/auth';
+import type { ApiPost } from '../api/posts';
 import PostCard from './PostCard';
+import UserListModal from './UserListModal';
 import { useAuth } from '../AuthContext';
 import toast from 'react-hot-toast';
-
-import type { ApiUser } from '../api/auth';
 
 function DynamicProfileName({ name }: { name: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -20,12 +18,21 @@ function DynamicProfileName({ name }: { name: string }) {
       const text = textRef.current;
       if (!container || !text) return;
 
+      // Disable overflow clipping to measure true scrollWidth
+      text.style.overflow = 'visible';
+      text.style.textOverflow = 'clip';
       text.style.fontSize = '2.2rem';
-      if (text.scrollWidth > container.clientWidth) {
+
+      // Small 5px buffer
+      if (text.scrollWidth > container.clientWidth && container.clientWidth > 0) {
         const ratio = (container.clientWidth - 5) / text.scrollWidth;
         const newSize = Math.max(0.8, 2.2 * ratio); 
         text.style.fontSize = `${newSize}rem`;
       }
+      
+      // Re-enable clipping
+      text.style.overflow = '';
+      text.style.textOverflow = '';
     };
 
     resizeText();
