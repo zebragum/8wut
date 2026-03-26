@@ -23,7 +23,18 @@ export default function FeedView({ filter }: FeedViewProps) {
 
   const loadPosts = useCallback(async () => {
     if (!currentUser) return;
-    setLoading(true);
+
+    const cacheKey = filter === 'fridge' ? 'fridge_feed' : 'discovery_feed';
+    const globalCache = (window as any)._apiCache || ((window as any)._apiCache = {});
+    
+    // SWR: Try to paint immediately from memory cache
+    if (globalCache[cacheKey]) {
+      setPosts(globalCache[cacheKey]);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     setError(null);
     try {
       let data: ApiPost[] = [];
@@ -35,6 +46,9 @@ export default function FeedView({ filter }: FeedViewProps) {
         data = discoveryPosts.filter(p => p.scope === 'everyone');
         setHasMore(discoveryPosts.length === 20);
       }
+      
+      // Update cache and sync state
+      globalCache[cacheKey] = data;
       setPosts(data);
       setPage(0);
     } catch {

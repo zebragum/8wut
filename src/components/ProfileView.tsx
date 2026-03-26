@@ -75,18 +75,40 @@ export default function ProfileView({ userId }: { userId?: string | null }) {
 
   const load = useCallback(async () => {
     if (!targetId) return;
-    setLoading(true);
+
+    const cacheKeyUser = `user_${targetId}`;
+    const cacheKeyPosts = `posts_${targetId}`;
+    const cacheKeyFridge = `fridge_${targetId}`;
+    const globalCache = (window as any)._apiCache || ((window as any)._apiCache = {});
+
+    // SWR: Hydrate state instantly from local memory
+    if (globalCache[cacheKeyUser]) {
+      setUser(globalCache[cacheKeyUser]);
+      setPosts(globalCache[cacheKeyPosts] || []);
+      setFridgePosts(globalCache[cacheKeyFridge] || []);
+      setIsFollowing(globalCache[cacheKeyUser].is_following || false);
+      if (globalCache[cacheKeyUser].bio_color) setNewBioColor(globalCache[cacheKeyUser].bio_color);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    // Silently fetch fresh data in background
     try {
       const [userData, userPosts, userFridge] = await Promise.all([
         getUser(targetId),
         getUserPosts(targetId),
         getUserFridgePosts(targetId)
       ]);
+      
+      globalCache[cacheKeyUser] = userData;
+      globalCache[cacheKeyPosts] = userPosts;
+      globalCache[cacheKeyFridge] = userFridge;
+
       setUser(userData);
       setPosts(userPosts);
       setFridgePosts(userFridge);
       setIsFollowing(userData.is_following || false);
-      // Initialize edit state with current bio color
       if (userData.bio_color) setNewBioColor(userData.bio_color);
     } catch {
       toast.error('Could not load profile');
