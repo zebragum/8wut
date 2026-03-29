@@ -46,6 +46,13 @@ export default function FeedView({ filter }: FeedViewProps) {
         data = discoveryPosts.filter(p => p.scope === 'everyone');
         setHasMore(discoveryPosts.length === 20);
       }
+      // Prefetch top 3 images instantly in background
+      data.slice(0, 3).forEach(post => {
+        if (post.images && post.images.length > 0) {
+          const img = new Image();
+          img.src = post.images[0];
+        }
+      });
       
       // Update cache and sync state
       globalCache[cacheKey] = data;

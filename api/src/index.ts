@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import pool from './db';
 import authRoutes from './routes/auth';
 import postsRoutes from './routes/posts';
@@ -31,6 +32,7 @@ app.use(cors({
   credentials: true
 }));
 
+app.use(compression());
 app.use(express.json());
 
 app.get('/health', async (_req, res) => {
