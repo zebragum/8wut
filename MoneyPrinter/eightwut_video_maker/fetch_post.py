@@ -395,6 +395,47 @@ def _pick_random_via_api(
     return None
 
 
+def _pick_random_via_public_http(
+    used_ids_file: Path,
+    *,
+    rng: random.Random,
+) -> tuple[PostMeta, list[str]] | None:
+    used = _read_used_ids(used_ids_file)
+    last_err: str | None = None
+    for _ in range(45):
+        try:
+            data = _fetch_public_post_payload(None)
+            pid = str(data.get("id") or "").strip()
+            if not pid or pid.lower() in used:
+                continue
+            meta = post_meta_from_public_sample_dict(data)
+            pool = data.get("handlePool") if isinstance(data.get("handlePool"), list) else []
+            handles = [str(x).strip() for x in pool if x and str(x).strip()]
+            if not handles:
+                handles = discovery_handle_pool(offset=0)
+            _append_used_id(used_ids_file, pid)
+            return meta, handles
+        except Exception as e:
+            last_err = str(e)
+            continue
+    if used_ids_file.is_file():
+        used_ids_file.write_text("", encoding="utf-8")
+        try:
+            data = _fetch_public_post_payload(None)
+            meta = post_meta_from_public_sample_dict(data)
+            pid = str(meta.source_post_id or "")
+            pool = data.get("handlePool") if isinstance(data.get("handlePool"), list) else []
+            handles = [str(x).strip() for x in pool if x and str(x).strip()]
+            if pid:
+                _append_used_id(used_ids_file, pid)
+            return meta, handles or discovery_handle_pool(offset=0)
+        except Exception as e:
+            last_err = str(e)
+    if last_err:
+        raise RuntimeError(f"public /mp/sample failed: {last_err}")
+    return None
+
+
 def _pick_random_via_db(
     used_ids_file: Path,
     dsn: str,

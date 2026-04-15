@@ -35,6 +35,7 @@ import argparse
 import os
 import random
 import sys
+import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -200,6 +201,29 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Remove audio tracks from all grok_bg_*.mp4 in data/grok_bg_clips (ffmpeg)",
     )
 
+    vo = p.add_argument_group("Voiceover (OpenAI TTS; needs OPENAI_API_KEY)")
+    vo.add_argument(
+        "--no-voiceover",
+        action="store_true",
+        help="Export without spoken promo track",
+    )
+    vo.add_argument(
+        "--voiceover-text",
+        type=str,
+        default=None,
+        help="Override default promo script (otherwise built-in 8wut line)",
+    )
+    vo.add_argument(
+        "--tts-voice",
+        default=os.environ.get("WUT8_TTS_VOICE", "shimmer"),
+        help="OpenAI voice: shimmer (softer) or nova (brighter), etc. (default shimmer)",
+    )
+    vo.add_argument(
+        "--tts-model",
+        default=os.environ.get("WUT8_TTS_MODEL", "tts-1-hd"),
+        help="OpenAI speech model (default tts-1-hd)",
+    )
+
     g = p.add_argument_group("Manual post (optional; skips API image fetch)")
     g.add_argument("--post-url", help="Canonical link shown in the video (default https://8wut.org)")
     g.add_argument("--image-url", help="Direct image URL")
@@ -353,12 +377,43 @@ def main(argv: list[str] | None = None) -> int:
     png = build_frame_png(meta, lines)
     png_written_early = False
 
+    vo_audio: Path | None = None
+    if not args.no_voiceover and key:
+        from eightwut_video_maker.voiceover import DEFAULT_PROMO_SCRIPT, synthesize_promo_voiceover
+
+        text = (args.voiceover_text or DEFAULT_PROMO_SCRIPT).strip()
+        try:
+            fd, tmp = tempfile.mkstemp(suffix=".mp3", prefix="wut8_vo_")
+            os.close(fd)
+            vo_audio = synthesize_promo_voiceover(
+                text,
+                api_key=key,
+                out_path=Path(tmp),
+                voice=args.tts_voice,
+                model=args.tts_model,
+            )
+            print(
+                f"Voiceover: {args.tts_voice} / {args.tts_model} — "
+                f"{vo_audio.stat().st_size // 1024} KiB"
+            )
+        except Exception as e:
+            print(f"Warning: voiceover failed ({e}); continuing silent.", file=sys.stderr)
+            vo_audio = None
+    elif not args.no_voiceover and not key:
+        print("Warning: voiceover skipped (no OPENAI_API_KEY).", file=sys.stderr)
+
     if args.static:
         if args.png:
             args.png.write_bytes(png)
             png_written_early = True
             print(f"Wrote frame {args.png}")
-        write_video_from_png(png, args.output, duration_sec=args.duration, fps=args.fps)
+        write_video_from_png(
+            png,
+            args.output,
+            duration_sec=args.duration,
+            fps=args.fps,
+            audio_path=vo_audio,
+        )
     else:
         bg_path, use_starfield, grok_cycle = _resolve_bg_media(
             args.bg_gif, force_stars=args.bg_stars
@@ -392,6 +447,7 @@ def main(argv: list[str] | None = None) -> int:
                 out_path=args.output,
                 fps=args.fps,
                 floater_keys_dir=args.floater_keys_dir,
+                audio_path=vo_audio,
             )
         elif use_starfield:
             print(
@@ -406,6 +462,7 @@ def main(argv: list[str] | None = None) -> int:
                 out_path=args.output,
                 fps=args.fps,
                 floater_keys_dir=args.floater_keys_dir,
+                audio_path=vo_audio,
             )
         elif bg_path is None or not bg_path.is_file():
             print(
@@ -414,7 +471,13 @@ def main(argv: list[str] | None = None) -> int:
                 "or pass --bg-gif PATH. Falling back to --static for this run.",
                 file=sys.stderr,
             )
-            write_video_from_png(png, args.output, duration_sec=args.duration, fps=args.fps)
+            write_video_from_png(
+                png,
+                args.output,
+                duration_sec=args.duration,
+                fps=args.fps,
+                audio_path=vo_audio,
+            )
         else:
             write_animated_video(
                 meta,
@@ -424,7 +487,14 @@ def main(argv: list[str] | None = None) -> int:
                 out_path=args.output,
                 fps=args.fps,
                 floater_keys_dir=args.floater_keys_dir,
+                audio_path=vo_audio,
             )
+
+    if vo_audio is not None:
+        try:
+            vo_audio.unlink()
+        except OSError:
+            pass
 
     if args.png and not png_written_early:
         write_video_first_frame_png(args.output, args.png)

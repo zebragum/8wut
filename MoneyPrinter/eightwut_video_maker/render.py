@@ -337,22 +337,44 @@ def write_video_from_png(
     *,
     duration_sec: float = 12.0,
     fps: int = 30,
+    audio_path: Path | None = None,
+    voiceover_tail_sec: float = 0.35,
 ) -> None:
-    from moviepy import ImageClip
+    from moviepy import AudioFileClip, ImageClip
 
     pil = Image.open(io.BytesIO(png_bytes)).convert("RGB")
     arr = np.asarray(pil)
-    clip = ImageClip(arr).with_duration(duration_sec).with_fps(fps)
+    dur = float(duration_sec)
+    audio_clip = None
+    if audio_path is not None and Path(audio_path).is_file():
+        _aud = AudioFileClip(str(audio_path))
+        ad = float(_aud.duration or 0.0)
+        if ad > 1e-3:
+            audio_clip = _aud
+            dur = max(dur, ad + float(voiceover_tail_sec))
+    clip = ImageClip(arr).with_duration(dur).with_fps(fps)
+    if audio_clip is not None:
+        if audio_clip.duration > dur + 0.05:
+            dur = float(audio_clip.duration) + float(voiceover_tail_sec)
+            clip = ImageClip(arr).with_duration(dur).with_fps(fps)
+        clip = clip.with_audio(audio_clip)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    clip.write_videofile(
-        str(out_path),
-        codec="libx264",
-        audio=False,
-        fps=fps,
-        preset="medium",
-        logger=None,
-    )
-    clip.close()
+    try:
+        clip.write_videofile(
+            str(out_path),
+            codec="libx264",
+            audio=audio_clip is not None,
+            fps=fps,
+            preset="medium",
+            logger=None,
+        )
+    finally:
+        clip.close()
+        if audio_clip is not None:
+            try:
+                audio_clip.close()
+            except Exception:
+                pass
 
 
 def write_video_first_frame_png(video_path: Path, png_path: Path) -> None:
@@ -872,6 +894,8 @@ def write_animated_video(
     pop_sec: float = 0.18,
     hold_tail_sec: float = 2.0,
     floater_keys_dir: Path | None = None,
+    audio_path: Path | None = None,
+    voiceover_tail_sec: float = 0.35,
 ) -> None:
     """
     Background: one video/GIF/image, cycling MP4s (e.g. Grok clips), or procedural starfield;
@@ -952,10 +976,25 @@ def write_animated_video(
     n = len(bubbles)
     st = max(float(stagger_sec), 1e-6)
     if n <= 1:
-        duration_sec = float(hold_tail_sec) + (pop_sec if n == 0 else 0.0)
+        animation_duration_sec = float(hold_tail_sec) + (pop_sec if n == 0 else 0.0)
     else:
-        duration_sec = (n - 1) * st + float(pop_sec) + float(hold_tail_sec)
-    duration_sec = max(duration_sec, float(hold_tail_sec))
+        animation_duration_sec = (n - 1) * st + float(pop_sec) + float(hold_tail_sec)
+    animation_duration_sec = max(animation_duration_sec, float(hold_tail_sec))
+
+    duration_sec = float(animation_duration_sec)
+    audio_clip = None
+    if audio_path is not None and Path(audio_path).is_file():
+        from moviepy import AudioFileClip
+
+        _aud = AudioFileClip(str(audio_path))
+        ad = float(_aud.duration or 0.0)
+        if ad > 1e-3:
+            audio_clip = _aud
+            duration_sec = max(duration_sec, ad + float(voiceover_tail_sec))
+        else:
+            _aud.close()
+
+    anim_cap = max(animation_duration_sec - 1e-6, 0.0)
 
     key_floaters = _make_key_floaters(
         hash(meta.post_url) & 0xFFFFFFFF,
@@ -965,23 +1004,24 @@ def write_animated_video(
     try:
 
         def make_frame(t: float) -> np.ndarray:
+            t_vis = min(float(t), anim_cap)
             if starfield:
-                pil_bg = _render_starfield_pil(t, star_seed)
+                pil_bg = _render_starfield_pil(t_vis, star_seed)
                 soften = _STARFIELD_SOFTEN
             elif use_video_cycle:
                 assert bg_clips_list
                 if len(bg_clips_list) == 1:
-                    pil_bg = _video_frame_to_bg_pil(bg_clips_list[0], t)
+                    pil_bg = _video_frame_to_bg_pil(bg_clips_list[0], t_vis)
                 else:
                     seg = max(cycle_seg, 0.25)
-                    idx = int(t / seg) % len(bg_clips_list)
+                    idx = int(t_vis / seg) % len(bg_clips_list)
                     c = bg_clips_list[idx]
-                    inner = t % seg
+                    inner = t_vis % seg
                     pil_bg = _video_frame_to_bg_pil(c, inner)
                 soften = _BG_VIDEO_CYCLE_SOFTEN
             elif use_video:
                 assert bg_clip is not None
-                pil_bg = _video_frame_to_bg_pil(bg_clip, t)
+                pil_bg = _video_frame_to_bg_pil(bg_clip, t_vis)
                 soften = _BG_VIDEO_SOFTEN
             elif use_static_image:
                 assert bg_static_pil is not None
@@ -989,7 +1029,7 @@ def write_animated_video(
                 soften = _BG_STATIC_IMAGE_SOFTEN
             else:
                 assert frames_gif is not None and durs is not None
-                bg = _gif_frame_blend(frames_gif, durs, t)
+                bg = _gif_frame_blend(frames_gif, durs, t_vis)
                 pil_bg = Image.fromarray(bg).resize((FRAME_W, FRAME_H), Image.Resampling.LANCZOS)
                 soften = _BG_GIF_SOFTEN
             if soften > 0:
@@ -1003,14 +1043,14 @@ def write_animated_video(
             od.rectangle((0, 0, FRAME_W, FRAME_H), fill=(0, 0, 0, 88))
             canvas = Image.alpha_composite(canvas, overlay)
 
-            _paste_key_floaters(canvas, t, key_floaters)
+            _paste_key_floaters(canvas, t_vis, key_floaters)
             draw = ImageDraw.Draw(canvas)
             _draw_header_rgba(draw, layout)
 
             canvas.paste(img_rgb.convert("RGBA"), (ix, iy))
 
             chat_layer = Image.new("RGBA", (FRAME_W, chat_h), (0, 0, 0, 0))
-            k = min(max(0, n - 1), int(t / st)) if n > 0 else -1
+            k = min(max(0, n - 1), int(t_vis / st)) if n > 0 else -1
             scroll = 0.0
             if k >= 0:
                 bk = bubbles[k]
@@ -1020,12 +1060,12 @@ def write_animated_video(
             psec = max(float(pop_sec), 1e-6)
             for i, b in enumerate(bubbles):
                 t0 = i * st
-                if t + 1e-9 < t0:
+                if t_vis + 1e-9 < t0:
                     continue
                 if i == 0:
                     a = 1.0
                 else:
-                    a = _ease_out_quad(min(1.0, (t - t0) / psec))
+                    a = _ease_out_quad(min(1.0, (t_vis - t0) / psec))
                 if a <= 0.001:
                     continue
                 ly = int(round(b.y0 - scroll))
@@ -1071,17 +1111,31 @@ def write_animated_video(
             return np.asarray(canvas.convert("RGB"))
 
         clip = VideoClip(make_frame, duration=duration_sec).with_fps(fps)
+        if audio_clip is not None:
+            try:
+                if audio_clip.duration > duration_sec + 0.05:
+                    duration_sec = float(audio_clip.duration) + float(voiceover_tail_sec)
+                    clip = VideoClip(make_frame, duration=duration_sec).with_fps(fps)
+                clip = clip.with_audio(audio_clip)
+            except Exception:
+                audio_clip.close()
+                raise
         out_path.parent.mkdir(parents=True, exist_ok=True)
         clip.write_videofile(
             str(out_path),
             codec="libx264",
-            audio=False,
+            audio=audio_clip is not None,
             fps=fps,
             preset="medium",
             logger=None,
         )
         clip.close()
     finally:
+        if audio_clip is not None:
+            try:
+                audio_clip.close()
+            except Exception:
+                pass
         if bg_clip is not None:
             bg_clip.close()
         for c in bg_clips_list:

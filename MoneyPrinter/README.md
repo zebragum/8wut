@@ -43,6 +43,17 @@ python main.py f47ac10b-58cc-4372-a567-0e02b2c3d479 -o out.mp4
 python main.py --post-url https://8wut.org --image-url https://example.com/plate.jpg --title "midnight ramen" --author noodle_nom -o out.mp4
 ```
 
+**Voiceover** (OpenAI **TTS**, same key as vision — on by default when `OPENAI_API_KEY` is set):
+
+```bash
+python main.py --random -o promo.mp4
+python main.py --random -o promo.mp4 --tts-voice nova
+python main.py --random -o promo.mp4 --no-voiceover
+python main.py --random -o promo.mp4 --voiceover-text "Your script here."
+```
+
+Default voice is **`shimmer`** (softer, closer to “demure”); **`nova`** is a bit brighter. Override with **`WUT8_TTS_VOICE`** / **`WUT8_TTS_MODEL`**. The clip length extends to fit the narration; the last frame holds while audio finishes.
+
 **Static** (single frame, no animated background):
 
 ```bash
