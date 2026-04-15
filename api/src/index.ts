@@ -13,6 +13,7 @@ import notificationsRoutes from './routes/notifications';
 import usersRoutes from './routes/users';
 import uploadRoutes from './routes/upload';
 import adminRoutes from './routes/admin';
+import moneyPrinterRoutes from './routes/moneyPrinter';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -45,6 +46,7 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use('/auth', authRoutes);
+app.use('/mp', moneyPrinterRoutes);
 app.use('/posts', postsRoutes);
 app.use('/posts', likesRoutes);
 app.use('/posts', commentsRoutes);

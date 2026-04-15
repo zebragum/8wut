@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.py[cod]
+
+eightwut_video_maker/data/comment_vibe.txt
+eightwut_video_maker/data/used_discovery_posts.txt
+eightwut_video_maker/data/used_starboard_posts.txt
+eightwut_video_maker/data/grok_bg_clips/
+
+# Large / generated media (fetch locally: --fetch-minecraft-bg, --fetch-grok-bgs)
+*.mp4
+preview_out*.png
