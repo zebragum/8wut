@@ -2,15 +2,30 @@
 
 from __future__ import annotations
 
+import re
 import tempfile
 from pathlib import Path
 
 
-# Energetic-but-soft, West-Coast-adjacent delivery works best with a warm female voice + this pacing.
+# TTS must not speak the brand as "eight wut" / "8wut" — use "ate what" in the script only.
 DEFAULT_PROMO_SCRIPT = (
-    "Ate what? It's called eight wut — a new food photojournaling app. "
+    "Ate what? It's a new food photojournaling app. "
     "Just be taking pictures of everything you ate, all in a timeline."
 )
+
+# Spoken brand variants → "ate what" (what TTS should say).
+_TTS_BRAND_SUBS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"\b8\s*[-]?\s*wut\b", re.I), "ate what"),
+    (re.compile(r"\beight\s*[-]?\s*wut\b", re.I), "ate what"),
+]
+
+
+def tts_safe_script(text: str) -> str:
+    """Strip speakable brand spellings so OpenAI TTS never says ``8wut`` / ``eight wut``."""
+    s = (text or "").strip()
+    for pat, repl in _TTS_BRAND_SUBS:
+        s = pat.sub(repl, s)
+    return s
 
 
 def synthesize_promo_voiceover(
@@ -49,10 +64,11 @@ def synthesize_promo_voiceover(
     if v not in allowed:
         v = "shimmer"
 
+    safe_input = tts_safe_script(text)
     resp = client.audio.speech.create(
         model=model,
         voice=v,  # type: ignore[arg-type]
-        input=text.strip(),
+        input=safe_input,
         response_format="mp3",
         speed=max(0.25, min(4.0, float(speed))),
     )

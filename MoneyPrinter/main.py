@@ -211,7 +211,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "--voiceover-text",
         type=str,
         default=None,
-        help="Override default promo script (otherwise built-in 8wut line)",
+        help="Override default promo script; write the app name as 'ate what' for TTS (spoken '8wut' is stripped)",
     )
     vo.add_argument(
         "--tts-voice",

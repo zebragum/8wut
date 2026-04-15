@@ -63,7 +63,7 @@ def _require_jwt() -> str:
     token = _jwt_optional()
     if not token:
         raise ValueError(
-            "Set WUT8_JWT for authenticated API routes, or rely on GET /mp/sample "
+            "Set WUT8_JWT for authenticated API routes, or rely on GET /mp/sample or /feed-preview "
             "on the deployed API, or set WUT8_DATABASE_URL / api/test_recent_posts.js."
         )
     return token
@@ -115,14 +115,26 @@ def fetch_post_json(post_id: str) -> dict:
         return r.json()
 
 
-def post_meta_from_public_sample_dict(p: dict) -> PostMeta:
-    """Shape from ``GET /posts/public-sample`` or ``.../public-sample/post/:id``."""
-    images = p.get("images") or []
+def _first_image_url(images: object) -> str:
+    """First image URL from API/DB JSON (string or ``{url: ...}``)."""
     if not isinstance(images, list) or not images:
-        raise ValueError("public-sample post has no images")
-    image_url = str(images[0]).strip() if isinstance(images[0], str) else str(images[0]).strip()
-    if not image_url:
+        raise ValueError("post has no images")
+    raw = images[0]
+    if isinstance(raw, str):
+        u = raw.strip()
+    elif isinstance(raw, dict):
+        u = str(raw.get("url") or raw.get("secure_url") or "").strip()
+    else:
+        u = str(raw).strip()
+    if not u:
         raise ValueError("empty image url")
+    return u
+
+
+def post_meta_from_public_sample_dict(p: dict) -> PostMeta:
+    """Shape from ``/mp/sample``, ``/feed-preview``, or post-by-id variants."""
+    images = p.get("images") or []
+    image_url = _first_image_url(images)
     author = p.get("author") or {}
     username = str(author.get("username") or "").strip() or "someone"
     caption = str(p.get("caption") or "").strip()
@@ -139,13 +151,12 @@ def post_meta_from_public_sample_dict(p: dict) -> PostMeta:
 
 def post_meta_from_api_dict(p: dict) -> PostMeta:
     images = p.get("images") or []
-    if not isinstance(images, list) or not images:
+    try:
+        image_url = _first_image_url(images)
+    except ValueError as e:
         raise ValueError(
             f"Post {p.get('id')} has no images — MoneyPrinter needs a food photo (image post)."
-        )
-    image_url = str(images[0]).strip()
-    if not image_url:
-        raise ValueError("Post has empty image URL")
+        ) from e
     author = p.get("author") or {}
     username = str(author.get("username") or "").strip() or "someone"
     caption = str(p.get("caption") or "").strip()
@@ -216,16 +227,35 @@ def fetch_post_row_from_db(post_id: str, dsn: str) -> PostMeta | None:
 
 
 def _fetch_public_post_payload(post_id: str | None) -> dict:
+    """
+    Try ``/mp/*`` first, then ``/feed-preview`` (root-mounted on API — works even when
+    ``/mp`` is missing on older deploys).
+    """
     base = public_api_base()
-    path = "/mp/sample" if post_id is None else f"/mp/sample/post/{post_id}"
+    if post_id is None:
+        paths = ["/mp/sample", "/feed-preview"]
+    else:
+        paths = [
+            f"/mp/sample/post/{post_id}",
+            f"/feed-preview/post/{post_id}",
+        ]
+    last_err: Exception | None = None
     with httpx.Client(
         headers={"Accept": "application/json", "User-Agent": "8wut-MoneyPrinter/1.0"},
         follow_redirects=True,
         timeout=60.0,
     ) as client:
-        r = client.get(f"{base}{path}")
-        r.raise_for_status()
-        return r.json()
+        for path in paths:
+            try:
+                r = client.get(f"{base}{path}")
+                r.raise_for_status()
+                return r.json()
+            except Exception as e:
+                last_err = e
+                continue
+    if last_err:
+        raise last_err
+    raise RuntimeError("no public post endpoints tried")
 
 
 def fetch_post(post_or_id: str) -> PostMeta:
@@ -245,7 +275,7 @@ def fetch_post(post_or_id: str) -> PostMeta:
             return meta
         raise ValueError(f"Post {pid} not found or has no images.")
     raise ValueError(
-        "Could not load post: set WUT8_JWT, or deploy API with GET /mp/sample, "
+        "Could not load post: set WUT8_JWT, or deploy API with GET /mp/sample or /feed-preview, "
         "or set WUT8_DATABASE_URL."
     )
 
@@ -303,6 +333,12 @@ def discovery_handle_pool(*, offset: int = 0) -> list[str]:
             timeout=45.0,
         ) as client:
             r = client.get(f"{base}/mp/usernames")
+            if r.status_code >= 400:
+                r = client.get(f"{base}/feed-preview")
+                r.raise_for_status()
+                data = r.json()
+                pool = data.get("handlePool") if isinstance(data.get("handlePool"), list) else []
+                return [str(x).strip() for x in pool if x and str(x).strip()]
             r.raise_for_status()
             arr = r.json()
         if isinstance(arr, list):
@@ -318,13 +354,16 @@ def discovery_handle_pool(*, offset: int = 0) -> list[str]:
     return []
 
 
+def _post_has_usable_image(p: dict) -> bool:
+    try:
+        _first_image_url(p.get("images") or [])
+        return True
+    except ValueError:
+        return False
+
+
 def _posts_with_images(posts: list[dict]) -> list[dict]:
-    out: list[dict] = []
-    for p in posts:
-        imgs = p.get("images") or []
-        if isinstance(imgs, list) and imgs and str(imgs[0]).strip():
-            out.append(p)
-    return out
+    return [p for p in posts if _post_has_usable_image(p)]
 
 
 def _read_used_ids(path: Path) -> set[str]:
@@ -432,7 +471,7 @@ def _pick_random_via_public_http(
         except Exception as e:
             last_err = str(e)
     if last_err:
-        raise RuntimeError(f"public /mp/sample failed: {last_err}")
+        raise RuntimeError(f"public /mp/sample and /feed-preview failed: {last_err}")
     return None
 
 
@@ -533,7 +572,7 @@ def pick_random_discovery_post(
         return _pick_random_via_db(used_ids_file, dsn, rng=rng)
 
     raise RuntimeError(
-        "Could not pick a post: deploy GET /mp/sample, or set WUT8_JWT, "
+        "Could not pick a post: deploy GET /mp/sample or /feed-preview, or set WUT8_JWT, "
         "or provide Postgres (WUT8_DATABASE_URL / api/test_recent_posts.js)."
     )
 

@@ -57,16 +57,24 @@ def fetch_post_comments_for_id(post_id: str, *, delay_sec: float = 0.0) -> list[
     )
 
     base = public_api_base()
+    paths = (
+        f"/mp/sample/{post_id}/comments",
+        f"/feed-preview/{post_id}/comments",
+    )
     try:
         with httpx.Client(
             headers={"Accept": "application/json", "User-Agent": "8wut-MoneyPrinter/1.0"},
             timeout=45.0,
         ) as client:
-            r = client.get(f"{base}/mp/sample/{post_id}/comments")
-            r.raise_for_status()
-            arr = r.json()
-        if isinstance(arr, list):
-            return [str(x).strip() for x in arr if x and str(x).strip()]
+            for path in paths:
+                try:
+                    r = client.get(f"{base}{path}")
+                    r.raise_for_status()
+                    arr = r.json()
+                except Exception:
+                    continue
+                if isinstance(arr, list):
+                    return [str(x).strip() for x in arr if x and str(x).strip()]
     except Exception:
         pass
 
